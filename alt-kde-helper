@@ -1,0 +1,9 @@
+#!/bin/bash
+# Скрипт запуска программы с правильным именем процесса
+
+PROG_DIR="/opt/alt-kde-helper/usr/share/alt-kde-helper"
+
+cd "$PROG_DIR" || exit 1
+
+# Запускаем с изменённым именем процесса
+exec -a alt-kde-helper python3 main.py "$@"
