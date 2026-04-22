@@ -29,22 +29,65 @@ echo
 if pkexec bash -c "
     set -e
 
-    # Настройка sudo (через getsudo.sh)
-    bash '$SCRIPT_DIR/getsudo.sh' '$REAL_USER'
+    # Флаг, нужно ли обновлять репозитории
+    NEED_UPDATE=0
 
-    # Проверка и установка зависимости PyQt6
-    echo -e '\\033[1;33m→ Проверка наличия PyQt6...\\033[0m'
-    if rpm -q python3-module-PyQt6 >/dev/null 2>&1; then
-        echo -e '\\033[1;32m✓ PyQt6 уже установлен\\033[0m'
+    # Проверка и установка sudo
+    echo -e '\\033[1;33m→ Проверка зависимостей...\\033[0m'
+    if ! command -v sudo &>/dev/null; then
+        NEED_UPDATE=1
+    fi
+
+    # Проверка PyQt6
+    if ! rpm -q python3-module-PyQt6 >/dev/null 2>&1; then
+        NEED_UPDATE=1
+    fi
+
+    # Если чего-то не хватает — обновляем репозитории
+    if [ \$NEED_UPDATE -eq 1 ]; then
+        echo -e '\\033[1;33m→ Обновление индексов репозиториев...\\033[0m'
+        if ! apt-get update; then
+            echo -e '\\033[1;31m❌ Ошибка: не удалось обновить репозитории\\033[0m'
+            echo -e '\\033[1;33mПроверьте подключение к интернету\\033[0m'
+            exit 1
+        fi
+        echo -e '\\033[1;32m✓ Репозитории обновлены\\033[0m'
+    fi
+
+    # Установка sudo (если нет)
+    if ! command -v sudo &>/dev/null; then
+        echo -e '\\033[1;33m→ Установка sudo...\\033[0m'
+        if ! apt-get install -y sudo; then
+            echo -e '\\033[1;31m❌ Критическая ошибка: не удалось установить sudo\\033[0m'
+            echo -e '\\033[1;31mБез sudo программа не сможет работать. Установка прервана.\\033[0m'
+            exit 1
+        fi
+        echo -e '\\033[1;32m✓ sudo установлен\\033[0m'
     else
+        echo -e '\\033[1;32m✓ sudo уже установлен\\033[0m'
+    fi
+
+    # Установка PyQt6 (если нет)
+    if ! rpm -q python3-module-PyQt6 >/dev/null 2>&1; then
         echo -e '\\033[1;33m→ Установка PyQt6...\\033[0m'
-        apt-get update && apt-get install -y python3-module-PyQt6
-        if [ \$? -ne 0 ]; then
+        if ! apt-get install -y python3-module-PyQt6; then
             echo -e '\\033[1;31m❌ Ошибка: не удалось установить PyQt6\\033[0m'
             echo -e '\\033[1;33mПроверьте подключение к интернету и репозитории\\033[0m'
             exit 1
         fi
         echo -e '\\033[1;32m✓ PyQt6 установлен\\033[0m'
+    else
+        echo -e '\\033[1;32m✓ PyQt6 уже установлен\\033[0m'
+    fi
+
+    # Настройка прав sudo (wheel группа)
+    echo -e '\\033[1;33m→ Настройка прав sudo...\\033[0m'
+    control sudowheel enabled || true
+    if ! usermod -aG wheel '$REAL_USER'; then
+        echo -e '\\033[1;33m⚠ Не удалось добавить пользователя в группу wheel\\033[0m'
+        echo -e '\\033[1;33mВозможно, группа wheel не существует или пользователь уже в ней\\033[0m'
+    else
+        echo -e '\\033[1;32m✓ Пользователь добавлен в группу wheel\\033[0m'
     fi
 
     # Создаём каталоги
