@@ -32,6 +32,21 @@ if pkexec bash -c "
     # Настройка sudo (через getsudo.sh)
     bash '$SCRIPT_DIR/getsudo.sh' '$REAL_USER'
 
+    # Проверка и установка зависимости PyQt6
+    echo -e '\\033[1;33m→ Проверка наличия PyQt6...\\033[0m'
+    if rpm -q python3-module-PyQt6 >/dev/null 2>&1; then
+        echo -e '\\033[1;32m✓ PyQt6 уже установлен\\033[0m'
+    else
+        echo -e '\\033[1;33m→ Установка PyQt6...\\033[0m'
+        apt-get update && apt-get install -y python3-module-PyQt6
+        if [ \$? -ne 0 ]; then
+            echo -e '\\033[1;31m❌ Ошибка: не удалось установить PyQt6\\033[0m'
+            echo -e '\\033[1;33mПроверьте подключение к интернету и репозитории\\033[0m'
+            exit 1
+        fi
+        echo -e '\\033[1;32m✓ PyQt6 установлен\\033[0m'
+    fi
+
     # Создаём каталоги
     mkdir -p $INSTALL_DIR/usr/share/$PROG_NAME
     mkdir -p $INSTALL_DIR/usr/share/applications
