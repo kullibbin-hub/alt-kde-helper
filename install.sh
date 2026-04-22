@@ -45,6 +45,7 @@ if pkexec bash -c "
 
     # Права
     chmod +x $INSTALL_DIR/$PROG_NAME
+    chmod 755 $INSTALL_DIR/usr/share/$PROG_NAME/scripts
     chmod +x $INSTALL_DIR/usr/share/$PROG_NAME/scripts/*.sh 2>/dev/null || true
 
     # Симлинк
