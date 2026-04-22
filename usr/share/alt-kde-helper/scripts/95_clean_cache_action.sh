@@ -41,9 +41,6 @@ HOME_BEFORE_KB=$(get_used_kb "/home")
 echo -e "\033[1;33m→ Очистка кэша APT...\033[0m"
 sudo apt-get clean
 
-echo -e "\033[1;33m→ Удаление ненужных пакетов...\033[0m"
-sudo apt-get autoremove -y
-
 if [ $STMPCLEAN_OK -eq 1 ]; then
     echo -e "\033[1;33m→ Очистка временных файлов /tmp...\033[0m"
     sudo stmpclean /tmp
