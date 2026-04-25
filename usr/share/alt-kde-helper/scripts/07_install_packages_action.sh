@@ -13,7 +13,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "\033[1;33m→ Установка пакетов...\033[0m"
-sudo apt-get install -y sudo synaptic-usermode epmgpi eepm-play-gui gearlever android-tools pipewire-jack git skanlite print-manager sane-airscan airsane gnome-disk-utility icon-theme-Papirus xdg-desktop-portal-gtk net-snmp kcm-grub2 kaccounts-providers avahi-daemon avahi-tools ffmpegthumbnailer mediainfo samba-usershares kdeconnect kamoso kio-admin stmpclean
+sudo apt-get install -y sudo synaptic-usermode epmgpi eepm-play-gui gearlever android-tools pipewire-jack git skanlite print-manager sane-airscan airsane gnome-disk-utility icon-theme-Papirus xdg-desktop-portal-gtk net-snmp kcm-grub2 kaccounts-providers avahi-daemon avahi-tools ffmpegthumbnailer mediainfo samba-usershares kdeconnect kamoso kio-admin
 
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: не удалось установить пакеты\033[0m"

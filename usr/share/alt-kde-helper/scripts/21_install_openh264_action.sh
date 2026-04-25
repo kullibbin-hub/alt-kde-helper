@@ -6,11 +6,14 @@ echo -e "\033[1;36m========================================\033[0m"
 
 # Проверка, установлен ли уже кодек
 if flatpak list | grep -q "org.freedesktop.Platform.openh264"; then
-    # Кодек уже есть - просто создаём флаг и удаляем из очереди
+    # Кодек уже есть
+    echo -e "\033[1;33m→ Кодек openh264 для Flatpak уже установлен в системе\033[0m"
     STATE_DIR="$HOME/.config/alt-kde-helper/state.d"
     mkdir -p "$STATE_DIR"
     touch "$STATE_DIR/$(basename "$0")"
+    echo -e "\033[1;32m✓ Флаг установки создан\033[0m"
     rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
+    echo -e "\033[1;32m✅ Проверка кодека openh264 завершена\033[0m"
     exit 0
 fi
 
@@ -71,4 +74,4 @@ touch "$STATE_DIR/$(basename "$0")"
 
 rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
 
-echo -e "\033[1;32m✅ Кодек openh264 успешно установлен\033[0m"
+echo -e "\033[1;32m✅ Кодек openh264 для Flatpak успешно установлен\033[0m"

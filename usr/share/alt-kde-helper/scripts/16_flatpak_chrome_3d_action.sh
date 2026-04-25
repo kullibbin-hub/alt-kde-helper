@@ -14,7 +14,7 @@ elif flatpak list --system --app 2>/dev/null | grep -q com.google.Chrome; then
     echo -e "\033[1;33m→ Используем пользовательские настройки (не требуют прав sudo)\033[0m"
     flatpak override --user --socket=x11 --socket=wayland --device=dri com.google.Chrome
 else
-    echo -e "\033[1;31m⚠ Google Chrome из Flatpak не установлен. Если Chrome установлен из epm, ускорение уже включено по умолчанию.\033[0m"
+    echo -e "\033[1;31m⚠ Google Chrome из Flatpak не установлен. Если он установлен из epm или stapler, ускорение включено по умолчанию.\033[0m"
     rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
     exit 0
 fi

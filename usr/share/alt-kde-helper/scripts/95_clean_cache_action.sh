@@ -4,23 +4,6 @@ echo -e "\033[1;36m========================================\033[0m"
 echo -e "\033[1;36mОчистка кэша\033[0m"
 echo -e "\033[1;36m========================================\033[0m"
 
-# Проверка наличия stmpclean
-STMPCLEAN_OK=0
-if sudo which stmpclean &>/dev/null; then
-    STMPCLEAN_OK=1
-    echo -e "\033[1;32m✓ stmpclean уже установлен\033[0m"
-else
-    echo -e "\033[1;33m→ stmpclean не установлен. Попытка установки...\033[0m"
-    sudo apt-get update 2>/dev/null
-    sudo apt-get install -y stmpclean 2>/dev/null
-    if sudo which stmpclean &>/dev/null; then
-        STMPCLEAN_OK=1
-        echo -e "\033[1;32m✓ stmpclean успешно установлен\033[0m"
-    else
-        echo -e "\033[1;33m⚠ stmpclean не установлен. Очистка /tmp и /var/tmp будет пропущена\033[0m"
-    fi
-fi
-
 # Функция для получения used в KB
 get_used_kb() {
     df -k "$1" 2>/dev/null | tail -1 | awk '{print $3}'
@@ -41,16 +24,6 @@ HOME_BEFORE_KB=$(get_used_kb "/home")
 echo -e "\033[1;33m→ Очистка кэша APT...\033[0m"
 sudo apt-get clean
 
-if [ $STMPCLEAN_OK -eq 1 ]; then
-    echo -e "\033[1;33m→ Очистка временных файлов /tmp...\033[0m"
-    sudo stmpclean /tmp
-
-    echo -e "\033[1;33m→ Очистка временных файлов /var/tmp...\033[0m"
-    sudo stmpclean /var/tmp
-else
-    echo -e "\033[1;33m⚠ Очистка /tmp и /var/tmp пропущена (stmpclean не установлен)\033[0m"
-fi
-
 echo -e "\033[1;33m→ Очистка старых системных журналов (оставляем 100 МБ)...\033[0m"
 sudo journalctl --vacuum-size=100M
 
@@ -60,8 +33,9 @@ rm -rf ~/.cache/*
 echo -e "\033[1;33m→ Очистка кэша Flatpak...\033[0m"
 rm -rf ~/.var/app/*/cache/*
 
-echo -e "\033[1;33m→ Удаление неиспользуемых рантаймов Flatpak...\033[0m"
-flatpak uninstall --unused -y 2>/dev/null
+echo -e "\033[1;33m→ Удаление неиспользуемых рантаймов Flatpak (кроме openh264)...\033[0m"
+# Получаем список неиспользуемых рантаймов, исключая openh264
+flatpak uninstall --unused -y 2>/dev/null | grep -v "openh264" || true
 
 echo -e "\033[1;33m→ Удаление старых, неиспользуемых ядер...\033[0m"
 sudo remove-old-kernels -y 2>/dev/null

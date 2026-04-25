@@ -81,21 +81,6 @@ QPushButton[class="TabButtonActive"] {
     background-color: palette(highlight);
     color: palette(highlighted-text);
 }
-
-/* Радиокнопки в виде кнопок */
-QPushButton[class="RadioButton"] {
-    border: 2px solid palette(mid);
-    border-radius: 10px;
-    background-color: palette(base);
-    min-width: 20px;
-    max-width: 20px;
-    min-height: 20px;
-    max-height: 20px;
-}
-QPushButton[class="RadioButton"]:checked {
-    background-color: palette(highlight);
-    border: 2px solid palette(highlight);
-}
 """
 
 def get_scripts_dir():

@@ -43,6 +43,11 @@ if pkexec bash -c "
         NEED_UPDATE=1
     fi
 
+    # Проверка 7-zip
+    if ! rpm -q 7-zip >/dev/null 2>&1; then
+        NEED_UPDATE=1
+    fi
+
     # Если чего-то не хватает — обновляем репозитории
     if [ \$NEED_UPDATE -eq 1 ]; then
         echo -e '\\033[1;33m→ Обновление индексов репозиториев...\\033[0m'
@@ -78,6 +83,19 @@ if pkexec bash -c "
         echo -e '\\033[1;32m✓ PyQt6 установлен\\033[0m'
     else
         echo -e '\\033[1;32m✓ PyQt6 уже установлен\\033[0m'
+    fi
+
+    # Установка 7-zip (если нет)
+    if ! rpm -q 7-zip >/dev/null 2>&1; then
+        echo -e '\\033[1;33m→ Установка 7-zip...\\033[0m'
+        if ! apt-get install -y 7-zip; then
+            echo -e '\\033[1;31m❌ Ошибка: не удалось установить 7-zip\\033[0m'
+            echo -e '\\033[1;33mПрограмма будет работать, но для некоторых операций может потребоваться 7-zip\\033[0m'
+        else
+            echo -e '\\033[1;32m✓ 7-zip установлен\\033[0m'
+        fi
+    else
+        echo -e '\\033[1;32m✓ 7-zip уже установлен\\033[0m'
     fi
 
     # Настройка прав sudo (wheel группа)
