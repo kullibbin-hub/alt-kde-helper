@@ -18,8 +18,8 @@ CURRENT_REPO=$(apt-repo 2>/dev/null | head -1 | awk '{print $3}')
 if echo "$CURRENT_REPO" | grep -qi "yandex"; then
     # Зеркало Yandex
     touch "$STATE_DIR/03_repo_yandex_action.sh"
-elif echo "$CURRENT_REPO" | grep -qiE "ftp\.altlinux\.org|p11|altlinux"; then
-    # Репозиторий по умолчанию p11 или altlinux.org
+elif echo "$CURRENT_REPO" | grep -qi "ftp.altlinux.org"; then
+    # Репозиторий по умолчанию (ftp.altlinux.org)
     touch "$STATE_DIR/04_repo_p11_action.sh"
 else
     # Другое зеркало (скорее всего, самое быстрое)

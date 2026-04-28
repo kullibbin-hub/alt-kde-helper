@@ -12,7 +12,7 @@ if ! command -v epm &> /dev/null; then
     sudo apt-get install -y eepm
     if [ $? -ne 0 ]; then
         echo -e "\033[1;31m❌ Ошибка: не удалось установить eepm\033[0m"
-        echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало p11\033[0m"
+        echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало\033[0m"
         bash "$(dirname "$0")/04_repo_p11_action.sh"
         rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
         exit 0

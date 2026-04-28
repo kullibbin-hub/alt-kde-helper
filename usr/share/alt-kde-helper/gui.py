@@ -252,8 +252,8 @@ class MirrorCard(QWidget):
         super().__init__(parent)
         self.mirrors = [
             ("02_repo_fast_mirror_action.sh", "Подключить самое быстрое зеркало репозитория"),
-            ("03_repo_yandex_action.sh", "Сменить зеркало на Yandex"),
-            ("04_repo_p11_action.sh", "Репозиторий по умолчанию (p11)"),
+            ("03_repo_yandex_action.sh", "Зеркало на Yandex"),
+            ("04_repo_p11_action.sh", "Репозиторий по умолчанию"),
         ]
         self.radio_buttons = {}
         self.button_group = QButtonGroup()
