@@ -605,14 +605,14 @@ class MainWindow(QMainWindow):
         self.current_worker = None
 
         self.recommended_scripts = [
-            "11_flatpak_home_access_action.sh",
             "12_fix_copy_indicator_action.sh",
             "13_increase_fonts_action.sh",
             "17_enable_ghns_action.sh",
             "08_add_groups_action.sh",
             "05_update_system_action.sh",
             "95_clean_cache_action.sh",
-            "06_install_eepm_action.sh"
+            "06_install_eepm_action.sh",
+            "07_install_packages_action.sh"
         ]
 
         # Запускаем скрипт проверки состояния системы после создания страниц
@@ -883,24 +883,9 @@ class MainWindow(QMainWindow):
     def create_fixes_page(self):
         cards = []
 
-        flatpak_card = SimpleActionCard(
-            "Установка Flatpak",
-            "Устанавливает Flatpak, плагин для Discover,\nподключает репозиторий Flathub.",
-            "10_install_flatpak_action.sh"
-        )
-        cards.append(flatpak_card)
-
-        cards.append(SimpleActionCard(
-            "Установка или обновление eepm",
-            "Устанавливает eepm, epmgpi, eepm-play-gui, или обновляет, если уже есть.",
-            "06_install_eepm_action.sh"
-        ))
-
-        cards.append(SimpleActionCard(
-            "Установка stplr/aides",
-            "Будут установлены stplr, плагин для Discover и репозиторий aides.\nВажно! В Discover пропадет возможность установки Google Chrome из Flatpak, \nвместо этого появится Google Chrome из Stapler! При необходимости можно удалить плагин\nsudo apt-get remove -y plasma-discover-stplr, установить Chrome, и вернуть плагин обратно.",
-            "20_install_stplr_action.sh"
-        ))
+        # ============================================================
+        # Без отката (SimpleActionCard)
+        # ============================================================
 
         codec_card = SimpleActionCard(
             "Установка кодека openh264 для Flatpak (без VPN)",
@@ -933,6 +918,32 @@ class MainWindow(QMainWindow):
             "08_add_groups_action.sh"
         ))
 
+        # ============================================================
+        # С откатом (ActionCard)
+        # ============================================================
+
+        flatpak_card = ActionCard(
+            "Установка Flatpak",
+            "Устанавливает Flatpak, плагин для Discover,подключает репозиторий Flathub.\nВ случае удаления Flatpak будут удалены и все приложения из него.",
+            "10_install_flatpak_action.sh",
+            "10_install_flatpak_rollback.sh"
+        )
+        cards.append(flatpak_card)
+
+        cards.append(ActionCard(
+            "Установка или обновление eepm",
+            "Устанавливает eepm, epmgpi, eepm-play-gui, \nобновляет eepm с сайта etersoft.",
+            "06_install_eepm_action.sh",
+            "06_install_eepm_rollback.sh"
+        ))
+
+        cards.append(ActionCard(
+            "Установка stplr/aides",
+            "Будут установлены stplr, плагин для Discover и репозиторий aides.\nВажно! В Discover пропадет возможность установки Google Chrome из Flatpak,\nвместо этого появится Google Chrome из Stapler! При необходимости можно удалить stplr по кнопке Откат,\nустановить Chrome из Flatpak, а потом установить stplr/aides.",
+            "20_install_stplr_action.sh",
+            "20_install_stplr_rollback.sh"
+        ))
+
         home_access_card = ActionCard(
             "Доступ для flatpak ко всему домашнему каталогу на чтение",
             "Необходимо для перетаскивания файлов на окна flatpak-приложений.\n\nДетальная настройка прав:\nПараметры системы → Права доступа приложений →\n→ выбрать приложение → кнопка \"Управление параметрами flatpak\"",
@@ -940,23 +951,6 @@ class MainWindow(QMainWindow):
             "11_flatpak_home_access_rollback.sh"
         )
         cards.append(home_access_card)
-
-        # Связываем: при включении flatpak включаем кодек и доступ к домашнему каталогу
-        def on_flatpak_toggled(state):
-            if state == Qt.CheckState.Checked.value:
-                # Включаем кодек
-                codec_card.install_cb.blockSignals(True)
-                codec_card.install_cb.setChecked(True)
-                codec_card.install_cb.blockSignals(False)
-                codec_card.update_style('orange')
-
-                # Включаем доступ к домашнему каталогу
-                home_access_card.install_cb.blockSignals(True)
-                home_access_card.install_cb.setChecked(True)
-                home_access_card.install_cb.blockSignals(False)
-                home_access_card.update_style('orange')
-
-        flatpak_card.install_cb.stateChanged.connect(on_flatpak_toggled)
 
         cards.append(ActionCard(
             "Размер шрифта 10",
@@ -985,6 +979,23 @@ class MainWindow(QMainWindow):
             "15_thumbnails_dwg_action.sh",
             "15_thumbnails_dwg_rollback.sh"
         ))
+
+        # Связываем: при включении flatpak включаем кодек и доступ к домашнему каталогу
+        def on_flatpak_toggled(state):
+            if state == Qt.CheckState.Checked.value:
+                # Включаем кодек
+                codec_card.install_cb.blockSignals(True)
+                codec_card.install_cb.setChecked(True)
+                codec_card.install_cb.blockSignals(False)
+                codec_card.update_style('orange')
+
+                # Включаем доступ к домашнему каталогу
+                home_access_card.install_cb.blockSignals(True)
+                home_access_card.install_cb.setChecked(True)
+                home_access_card.install_cb.blockSignals(False)
+                home_access_card.update_style('orange')
+
+        flatpak_card.install_cb.stateChanged.connect(on_flatpak_toggled)
 
         return CategoryPage(cards)
 

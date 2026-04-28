@@ -98,16 +98,6 @@ if pkexec bash -c "
         echo -e '\\033[1;32m✓ 7-zip уже установлен\\033[0m'
     fi
 
-    # Настройка прав sudo (wheel группа)
-    echo -e '\\033[1;33m→ Настройка прав sudo...\\033[0m'
-    control sudowheel enabled || true
-    if ! usermod -aG wheel '$REAL_USER'; then
-        echo -e '\\033[1;33m⚠ Не удалось добавить пользователя в группу wheel\\033[0m'
-        echo -e '\\033[1;33mВозможно, группа wheel не существует или пользователь уже в ней\\033[0m'
-    else
-        echo -e '\\033[1;32m✓ Пользователь добавлен в группу wheel\\033[0m'
-    fi
-
     # Создаём каталоги
     mkdir -p $INSTALL_DIR/usr/share/$PROG_NAME
     mkdir -p $INSTALL_DIR/usr/share/applications

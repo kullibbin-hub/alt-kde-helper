@@ -1,9 +1,45 @@
 #!/bin/bash
-# Скрипт запуска программы с правильным именем процесса
+# Скрипт запуска программы с проверкой sudo
 
 PROG_DIR="/opt/alt-kde-helper/usr/share/alt-kde-helper"
+CHECK_SUDO_SCRIPT="$PROG_DIR/scripts/check_sudo.sh"
 
-cd "$PROG_DIR" || exit 1
+# Функция проверки, настроен ли sudo
+# Возвращает 0 если sudo НЕ настроен, 1 если настроен
+is_sudo_not_configured() {
+    sudo -n -v 2>&1 | grep -q "$USER"
+}
 
-# Запускаем с изменённым именем процесса
-exec -a alt-kde-helper python3 main.py "$@"
+# Функция запроса настройки sudo через kdialog
+ask_setup_sudo() {
+    kdialog --yesno "Для работы программы необходим доступ к sudo.\n\nВыполнить настройку sudo?" --title "Alt KDE Helper"
+}
+
+# Функция запуска main.py
+run_main() {
+    cd "$PROG_DIR" || exit 1
+    exec -a alt-kde-helper python3 main.py "$@"
+}
+
+# Основная логика
+if is_sudo_not_configured; then
+    # sudo не настроен, спрашиваем
+    if ask_setup_sudo; then
+        # Запускаем настройку через pkexec
+        pkexec bash "$CHECK_SUDO_SCRIPT"
+
+        # Проверяем ещё раз после настройки
+        if is_sudo_not_configured; then
+            kdialog --error "Не удалось настроить sudo. Обратитесь к администратору системы." --title "Alt KDE Helper"
+            exit 1
+        else
+            run_main "$@"
+        fi
+    else
+        # Пользователь отказался
+        exit 1
+    fi
+else
+    # sudo настроен, запускаем программу
+    run_main "$@"
+fi
