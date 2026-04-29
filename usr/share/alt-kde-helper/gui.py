@@ -16,7 +16,7 @@ from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction
 
 from config import (
     STYLESHEET, get_scripts_dir, get_state_dir, get_actions_dir,
-    clear_actions_dir, get_help_path
+    clear_actions_dir, get_help_path, get_version
 )
 
 
@@ -493,33 +493,33 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
-        self.setMinimumSize(870, 650)
-        self.resize(870, 650)
+        self.setMinimumSize(800, 600)
+        self.resize(800, 600)
 
         clear_actions_dir()
 
         central = QWidget()
         self.setCentralWidget(central)
 
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(10, 10, 10, 10)
-        main_layout.setSpacing(10)
-
-        # Верхняя часть с категориями и меню
-        top_layout = QHBoxLayout()
-        top_layout.setContentsMargins(0, 0, 0, 0)
-        top_layout.setSpacing(0)
+        main_layout = QHBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
         # Левая панель с кнопками категорий и меню
         left_panel = QWidget()
-        left_panel.setFixedWidth(180)
+        left_panel.setFixedWidth(140)
+        left_panel.setAutoFillBackground(True)
+        from PyQt6.QtGui import QPalette
+        pal = left_panel.palette()
+        pal.setColor(QPalette.ColorRole.Window, pal.color(QPalette.ColorRole.Base))
+        left_panel.setPalette(pal)
         left_panel_layout = QVBoxLayout()
         left_panel_layout.setContentsMargins(0, 0, 0, 0)
         left_panel_layout.setSpacing(5)
 
         # Кнопка-меню с системной иконкой KDE
         self.menu_button = QPushButton()
-        self.menu_button.setIcon(QIcon.fromTheme("view-more-symbolic"))
+        self.menu_button.setIcon(QIcon.fromTheme("application-menu"))
         self.menu_button.setIconSize(self.menu_button.sizeHint())
         self.menu_button.setFixedSize(40, 40)
         self.menu_button.setToolTip("Меню")
@@ -537,7 +537,6 @@ class MainWindow(QMainWindow):
         self.menu_button.clicked.connect(self.show_menu)
         left_panel_layout.addWidget(self.menu_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # Отступ сверху перед кнопками категорий (20 пикселей)
         left_panel_layout.addSpacing(20)
 
         # Кнопки категорий
@@ -559,6 +558,12 @@ class MainWindow(QMainWindow):
         left_panel_layout.addStretch()
         left_panel.setLayout(left_panel_layout)
 
+        # Правая часть (контент + кнопки внизу)
+        right_widget = QWidget()
+        right_layout = QVBoxLayout()
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(0)
+
         # Стек страниц
         self.stack = QWidget()
         self.stack_layout = QVBoxLayout()
@@ -572,13 +577,19 @@ class MainWindow(QMainWindow):
         self.fixes_page.setVisible(False)
 
         self.stack.setLayout(self.stack_layout)
-
-        top_layout.addWidget(left_panel)
-        top_layout.addWidget(self.stack, 1)
-        main_layout.addLayout(top_layout)
+        right_layout.addWidget(self.stack, 1)
 
         # Нижняя панель с кнопками
         bottom_layout = QHBoxLayout()
+
+        # Добавляем разделительную полосу между контентом и нижней панелью
+        line_h = QFrame()
+        line_h.setFrameShape(QFrame.Shape.HLine)
+        line_h.setFrameShadow(QFrame.Shadow.Sunken)
+        line_h.setFixedHeight(1)
+
+        right_layout.addWidget(line_h)
+
         bottom_layout.setContentsMargins(0, 10, 10, 10)
         bottom_layout.setSpacing(10)
 
@@ -593,11 +604,28 @@ class MainWindow(QMainWindow):
 
         self.apply_btn = QPushButton("Применить")
         self.apply_btn.setProperty("class", "BottomButton")
+
+        self.apply_btn = QPushButton(" Применить")
+        self.apply_btn.setIcon(QIcon.fromTheme("dialog-ok"))
+        self.apply_btn.setProperty("class", "BottomButton")
+
         self.apply_btn.setToolTip("После нажатия кнопки откроется терминал.\nВ нём будут выполняться указанные задания.\nДождитесь надписи об окончании, не закрывайте терминал раньше.")
         self.apply_btn.clicked.connect(self.apply_actions)
         bottom_layout.addWidget(self.apply_btn)
 
-        main_layout.addLayout(bottom_layout)
+        right_layout.addLayout(bottom_layout)
+        right_widget.setLayout(right_layout)
+
+        main_layout.addWidget(left_panel)
+        main_layout.addWidget(right_widget, 1)
+
+        # Добавляем разделительную полосу между левой панелью и правой частью
+        line_v = QFrame()
+        line_v.setFrameShape(QFrame.Shape.VLine)
+        line_v.setFrameShadow(QFrame.Shadow.Sunken)
+        line_v.setFixedWidth(1)
+        main_layout.insertWidget(1, line_v)
+
         central.setLayout(main_layout)
 
         self.help_dialog = None
@@ -639,7 +667,12 @@ class MainWindow(QMainWindow):
         help_action = QAction("Справка", self)
         help_action.triggered.connect(self.show_help)
         menu.addAction(help_action)
-
+        about_action = QAction("О программе", self)
+        about_action.triggered.connect(self.show_about)
+        menu.addAction(about_action)
+        check_update_action = QAction("Проверить обновление", self)
+        check_update_action.triggered.connect(self.check_for_updates)
+        menu.addAction(check_update_action)
         menu.exec(self.menu_button.mapToGlobal(QPoint(0, self.menu_button.height())))
 
     def closeEvent(self, event: QCloseEvent):
@@ -684,7 +717,6 @@ class MainWindow(QMainWindow):
 
     def toggle_recommended(self):
         cards = self.get_all_cards()
-        mirror_card = self.get_mirror_card()
 
         if not self.recommended_state:
             for card in cards:
@@ -880,6 +912,59 @@ class MainWindow(QMainWindow):
         self.help_dialog.raise_()
         self.help_dialog.activateWindow()
 
+    def show_help(self):
+        if self.help_dialog is None:
+            self.help_dialog = HelpDialog(self)
+        self.help_dialog.show()
+        self.help_dialog.raise_()
+        self.help_dialog.activateWindow()
+
+    def show_about(self):
+        QMessageBox.about(
+            self,
+            "О программе Alt KDE Helper",
+            f"<b>Alt KDE Helper</b><br><br>"
+            f"Версия: {get_version()}<br><br>"
+            "Программа для настройки и обслуживания<br>"
+            "ALT Linux 11 с рабочим столом KDE6<br><br>"
+            "Автор: kullibbin<br>"
+            "<a href='mailto:kullibbin@gmail.com'>kullibbin@gmail.com</a><br><br>"
+            "<a href='https://github.com/kullibbin-hub/alt-kde-helper'>GitHub</a>"
+        )
+
+    def check_for_updates(self):
+        import urllib.request
+        import json
+
+        current_version = get_version()
+
+        try:
+            req = urllib.request.Request(
+                "https://api.github.com/repos/kullibbin-hub/alt-kde-helper/releases/latest",
+                headers={"User-Agent": "Alt KDE Helper"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+                latest_version = data.get("tag_name", "").lstrip("v")
+                release_url = data.get("html_url", "")
+
+            if latest_version and latest_version > current_version:
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Доступно обновление")
+                msg.setText(f"Доступна новая версия: {latest_version}\n\nВаша версия: {current_version}\n\nПерейти на страницу загрузки?")
+                msg.setInformativeText("На странице GitHub вы сможете посмотреть изменения и скачать новый RPM.")
+                msg.setStyleSheet("QLabel{min-width: 450px;}")
+                msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+                msg.setDefaultButton(QMessageBox.StandardButton.Yes)
+                if msg.exec() == QMessageBox.StandardButton.Yes:
+                    QDesktopServices.openUrl(QUrl(release_url))
+            elif latest_version:
+                QMessageBox.information(self, "Обновлений нет", f"У вас последняя версия {current_version}")
+            else:
+                QMessageBox.warning(self, "Ошибка", "Не удалось определить версию на GitHub")
+        except Exception as e:
+            QMessageBox.warning(self, "Ошибка", f"Не удалось проверить обновления:\n{str(e)}")
+
     def create_fixes_page(self):
         cards = []
 
@@ -908,7 +993,7 @@ class MainWindow(QMainWindow):
 
         cards.append(SimpleActionCard(
             "Установка цветных значков papirus",
-            "Будут установлены значки papirus с разными цветами папок.\nУстановка может занимать несколько минут,\nиз-за большого количества маленьких файлов, наберитесь терпения.",
+            "Будут установлены значки papirus-remix-icon-theme с разными цветами папок.\nУстановка может занимать несколько минут, из-за большого количества маленьких файлов,\nнаберитесь терпения.",
             "18_install_papirus_icons_action.sh"
         ))
 

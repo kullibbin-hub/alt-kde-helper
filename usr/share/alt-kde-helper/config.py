@@ -64,8 +64,10 @@ QPushButton[class="BottomButton"] {
 
 /* Кнопки вкладок */
 QPushButton[class="TabButton"] {
-    text-align: left;
+    text-align: center;
     padding: 8px 12px;
+    margin-left: 5px;
+    margin-right: 5px;
     font-weight: normal;
     border: none;
     border-radius: 4px;
@@ -76,8 +78,10 @@ QPushButton[class="TabButton"]:hover {
     background-color: palette(alternate-base);
 }
 QPushButton[class="TabButtonActive"] {
-    text-align: left;
+    text-align: center;
     padding: 8px 12px;
+    margin-left: 5px;
+    margin-right: 5px;
     background-color: palette(highlight);
     color: palette(highlighted-text);
 }
@@ -109,3 +113,19 @@ def clear_actions_dir():
 
 def get_help_path():
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'help.html')
+
+def get_version():
+    # Сначала пробуем найти в системе (установленный пакет)
+    version_file = '/usr/share/doc/alt-kde-helper/version.txt'
+    if os.path.exists(version_file):
+        with open(version_file, 'r', encoding='utf-8') as f:
+            return f.read().strip()
+
+    # Если не нашли, пробуем в корне проекта (для разработки)
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    version_file = os.path.join(base_dir, 'version.txt')
+    try:
+        with open(version_file, 'r', encoding='utf-8') as f:
+            return f.read().strip()
+    except:
+        return "unknown"

@@ -34,7 +34,7 @@
 
 ### Самый простой способ — через RPM-пакет
 
-Скачайте файл alt-kde-helper-1.1.2-alt1.noarch.rpm со страницы релизов:
+Скачайте файл alt-kde-helper-1.1.3-alt1.noarch.rpm со страницы релизов:
 https://github.com/kullibbin-hub/alt-kde-helper/releases/
 
 **Установка через Discover**
@@ -54,7 +54,7 @@ https://github.com/kullibbin-hub/alt-kde-helper/releases/
 
 3. Введите пароль root, затем выполните:
 
-apt-get install /home/$(logname)/alt-kde-helper-1.1.2-alt1.noarch.rpm
+apt-get install /home/$(logname)/alt-kde-helper-1.1.3-alt1.noarch.rpm
 
 ### Установка из исходников
 
@@ -97,7 +97,7 @@ apt-get install /home/$(logname)/alt-kde-helper-1.1.2-alt1.noarch.rpm
 
 В данной программе `epm` можно установить двумя способами:
 - Пункт **«Установка eepm»** (в категории «Настройки»)
-- Пункт **«Установка рекомендованных пакетов»** (на вкладке «Настройки»)
+- Пункт **«Установка рекомендованных пакетов»** (в категории «Обслуживание»)
 
 В обоих случаях `epm` установится автоматически.
 
@@ -105,6 +105,5 @@ apt-get install /home/$(logname)/alt-kde-helper-1.1.2-alt1.noarch.rpm
 
 - **Автор:** kullibbin
 - **Лицензия:** MIT
-- **Версия:** 1.1.2
 - **Исходный код:** [https://github.com/kullibbin-hub/alt-kde-helper](https://github.com/kullibbin-hub/alt-kde-helper)
 - **Обратная связь:** kullibbin@gmail.com
