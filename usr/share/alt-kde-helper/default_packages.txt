@@ -1,0 +1,62 @@
+# Список рекомендуемых пакетов. Можно добавлять свои,
+# по одному с новой строки. Для исключения пакета из списка
+# достаточно поставить знак # перед его названием.
+
+# Поддержка принтеров
+print-manager
+hplip-recommends
+printer-drivers-base
+# printer-driver-brlaser
+# printer-driver-capt
+# printer-driver-lbp660
+# printer-driver-lxx74
+# printer-driver-rname
+# printer-driver-Xerox-Phaser-3200MFP
+
+# Поддержка сканирования
+skanlite
+sane-airscan
+airsane
+net-snmp
+avahi-daemon
+avahi-tools
+
+# Выбор зеркала репозитория
+# alt-mirror-switcher
+# alt-mirror-switcher-lists-branch
+# alt-mirror-switcher-lists-sisyphus
+
+
+# Системные утилиты
+synaptic-usermode
+epmgpi
+eepm-play-gui
+gearlever
+android-tools
+gnome-disk-utility
+kcm-grub2
+kio-admin
+
+# Мультимедиа и кодеки
+pipewire-jack
+ffmpegthumbnailer
+mediainfo
+
+# Сеть и обмен файлами
+samba-usershares
+kdeconnect
+
+# Разработка и версионирование
+git
+
+# Иконки и темы
+icon-theme-Papirus
+xdg-desktop-portal-gtk
+
+# Интеграция с облачными сервисами
+kaccounts-providers
+
+# Разное
+kamoso
+qmmp
+

@@ -602,13 +602,9 @@ class MainWindow(QMainWindow):
 
         bottom_layout.addSpacing(10)
 
-        self.apply_btn = QPushButton("Применить")
-        self.apply_btn.setProperty("class", "BottomButton")
-
         self.apply_btn = QPushButton(" Применить")
         self.apply_btn.setIcon(QIcon.fromTheme("dialog-ok"))
         self.apply_btn.setProperty("class", "BottomButton")
-
         self.apply_btn.setToolTip("После нажатия кнопки откроется терминал.\nВ нём будут выполняться указанные задания.\nДождитесь надписи об окончании, не закрывайте терминал раньше.")
         self.apply_btn.clicked.connect(self.apply_actions)
         bottom_layout.addWidget(self.apply_btn)
@@ -646,6 +642,16 @@ class MainWindow(QMainWindow):
         # Запускаем скрипт проверки состояния системы после создания страниц
         self.run_check_state()
 
+        # Создаём user_packages.txt из стандартного, только если файла не существует
+        packages_file = os.path.expanduser('~/.config/alt-kde-helper/user_packages.txt')
+        default_file = '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
+        os.makedirs(os.path.dirname(packages_file), exist_ok=True)
+        if not os.path.exists(packages_file):
+            if os.path.exists(default_file):
+                shutil.copy2(default_file, packages_file)
+            else:
+                open(packages_file, 'w').close()
+
         # Обновляем состояние карточек после проверки
         for card in self.get_all_cards():
             if hasattr(card, 'load_state'):
@@ -673,6 +679,17 @@ class MainWindow(QMainWindow):
         check_update_action = QAction("Проверить обновление", self)
         check_update_action.triggered.connect(self.check_for_updates)
         menu.addAction(check_update_action)
+
+        menu.addSeparator()
+
+        edit_packages_action = QAction("Редактировать список пакетов", self)
+        edit_packages_action.triggered.connect(self.edit_packages_list)
+        menu.addAction(edit_packages_action)
+
+        reset_packages_action = QAction("Восстановить список пакетов по умолчанию", self)
+        reset_packages_action.triggered.connect(self.reset_packages_list)
+        menu.addAction(reset_packages_action)
+
         menu.exec(self.menu_button.mapToGlobal(QPoint(0, self.menu_button.height())))
 
     def closeEvent(self, event: QCloseEvent):
@@ -912,13 +929,6 @@ class MainWindow(QMainWindow):
         self.help_dialog.raise_()
         self.help_dialog.activateWindow()
 
-    def show_help(self):
-        if self.help_dialog is None:
-            self.help_dialog = HelpDialog(self)
-        self.help_dialog.show()
-        self.help_dialog.raise_()
-        self.help_dialog.activateWindow()
-
     def show_about(self):
         QMessageBox.about(
             self,
@@ -964,6 +974,47 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Ошибка", "Не удалось определить версию на GitHub")
         except Exception as e:
             QMessageBox.warning(self, "Ошибка", f"Не удалось проверить обновления:\n{str(e)}")
+
+    def edit_packages_list(self):
+        import subprocess
+        packages_file = os.path.expanduser('~/.config/alt-kde-helper/user_packages.txt')
+        os.makedirs(os.path.dirname(packages_file), exist_ok=True)
+
+        if not os.path.exists(packages_file):
+            default_file = '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
+            if os.path.exists(default_file):
+                shutil.copy2(default_file, packages_file)
+            else:
+                # Если нет ни user, ни default — создаём пустой файл
+                open(packages_file, 'w').close()
+
+        if subprocess.run(['which', 'kate'], capture_output=True).returncode == 0:
+            editor = 'kate'
+        elif subprocess.run(['which', 'kwrite'], capture_output=True).returncode == 0:
+            editor = 'kwrite'
+        else:
+            editor = 'kwrite'
+
+        subprocess.Popen([editor, packages_file])
+
+    def reset_packages_list(self):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Восстановление списка пакетов")
+        msg.setText("Восстановить список пакетов по умолчанию?")
+        msg.setInformativeText("Текущий список будет потерян.")
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.No)
+
+        if msg.exec() == QMessageBox.StandardButton.Yes:
+            default_file = '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
+            packages_file = os.path.expanduser('~/.config/alt-kde-helper/user_packages.txt')
+            os.makedirs(os.path.dirname(packages_file), exist_ok=True)
+
+            if os.path.exists(default_file):
+                shutil.copy2(default_file, packages_file)
+                QMessageBox.information(self, "Готово", "Список пакетов восстановлен")
+            else:
+                QMessageBox.warning(self, "Ошибка", "Файл со стандартным списком не найден")
 
     def create_fixes_page(self):
         cards = []
@@ -1091,7 +1142,7 @@ class MainWindow(QMainWindow):
 
         cards.append(SimpleActionCard(
             "Установка/переустановка рекомендованных пакетов",
-            "Устанавливает или переустанавливает:\nsudo synaptic-usermode epmgpi eepm-play-gui gearlever android-tools pipewire-jack git skanlite print-manager sane-airscan airsane gnome-disk-utility icon-theme-Papirus xdg-desktop-portal-gtk net-snmp kcm-grub2 kaccounts-providers avahi-daemon avahi-tools ffmpegthumbnailer mediainfo samba-usershares kdeconnect kamoso kio-admin",
+            "Устанавливает пакеты из списка ~/.config/alt-kde-helper/user_packages.txt.\nСписок можно редактировать через меню в верхнем левом углу окна приложения",
             "07_install_packages_action.sh"
         ))
 

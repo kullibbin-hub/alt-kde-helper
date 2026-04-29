@@ -1,8 +1,16 @@
 #!/bin/bash
 
 echo -e "\033[1;36m========================================\033[0m"
-echo -e "\033[1;36mУстановка рекомендованных пакетов\033[0m"
+echo -e "\033[1;36mУстановка пакетов по списку\033[0m"
 echo -e "\033[1;36m========================================\033[0m"
+
+PACKAGES_FILE="$HOME/.config/alt-kde-helper/user_packages.txt"
+
+if [ ! -f "$PACKAGES_FILE" ]; then
+    echo -e "\033[1;31m❌ Ошибка: файл со списком пакетов не найден\033[0m"
+    echo -e "\033[1;31m   $PACKAGES_FILE\033[0m"
+    exit 1
+fi
 
 echo -e "\033[1;33m→ Обновление списка пакетов...\033[0m"
 sudo apt-get update
@@ -12,18 +20,31 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "\033[1;33m→ Установка пакетов...\033[0m"
-sudo apt-get install -y sudo synaptic-usermode epmgpi eepm-play-gui gearlever android-tools pipewire-jack git skanlite print-manager sane-airscan airsane gnome-disk-utility icon-theme-Papirus xdg-desktop-portal-gtk net-snmp kcm-grub2 kaccounts-providers avahi-daemon avahi-tools ffmpegthumbnailer mediainfo samba-usershares kdeconnect kamoso kio-admin
+# Собираем список пакетов из файла, пропуская пустые строки и комментарии
+PACKAGES=""
+while IFS= read -r line || [ -n "$line" ]; do
+    # Удаляем пробелы в начале и конце
+    pkg=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    # Пропускаем пустые строки и строки, начинающиеся с #
+    if [ -n "$pkg" ] && [ "${pkg#\#}" = "$pkg" ]; then
+        PACKAGES="$PACKAGES $pkg"
+    fi
+done < "$PACKAGES_FILE"
+
+if [ -z "$PACKAGES" ]; then
+    echo -e "\033[1;33m⚠ Список пакетов пуст. Нечего устанавливать.\033[0m"
+    rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
+    exit 0
+fi
+
+echo -e "\033[1;33m→ Установка пакетов: $PACKAGES\033[0m"
+sudo apt-get install -y $PACKAGES
 
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: не удалось установить пакеты\033[0m"
     exit 1
 fi
 
-STATE_DIR="$HOME/.config/alt-kde-helper/state.d"
-mkdir -p "$STATE_DIR"
-touch "$STATE_DIR/$(basename "$0")"
-
 rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
 
-echo -e "\033[1;32m✅ Рекомендованные пакеты успешно установлены\033[0m"
+echo -e "\033[1;32m✅ Пакеты успешно установлены\033[0m"
