@@ -493,8 +493,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
-        self.setMinimumSize(800, 600)
-        self.resize(800, 600)
+        self.setMinimumSize(800, 640)
+        self.resize(800, 640)
 
         clear_actions_dir()
 
@@ -1132,6 +1132,13 @@ class MainWindow(QMainWindow):
                 home_access_card.update_style('orange')
 
         flatpak_card.install_cb.stateChanged.connect(on_flatpak_toggled)
+
+        cards.append(ActionCard(
+            "Включить локальную сеть (samba)",
+            "Включает в автозапуск сервисы smb и nmb для обеспечения\nработы локальной сети с протоколом SMB.\n\nПакеты samba и samba-client должны быть установлены.",
+            "22_enable_samba_action.sh",
+            "22_enable_samba_rollback.sh"
+        ))
 
         return CategoryPage(cards)
 

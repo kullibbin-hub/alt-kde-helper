@@ -45,6 +45,8 @@ mediainfo
 # Сеть и обмен файлами
 samba-usershares
 kdeconnect
+samba
+sabma-client
 
 # Разработка и версионирование
 git
