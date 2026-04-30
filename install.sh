@@ -109,6 +109,15 @@ if pkexec bash -c "
     cp '$SCRIPT_DIR/usr/share/alt-kde-helper/alt-kde-helper.svg' $INSTALL_DIR/usr/share/alt-kde-helper/
     cp '$SCRIPT_DIR/usr/share/alt-kde-helper/alt-kde-helper.svg' /usr/share/icons/hicolor/scalable/apps/
 
+    # Копируем документацию и version.txt
+    mkdir -p /usr/share/doc/$PROG_NAME
+    cp '$SCRIPT_DIR/README.md' /usr/share/doc/$PROG_NAME/ 2>/dev/null || true
+    cp '$SCRIPT_DIR/version.txt' /usr/share/doc/$PROG_NAME/
+    cp '$SCRIPT_DIR/install.sh' /usr/share/doc/$PROG_NAME/
+    cp '$SCRIPT_DIR/uninstall.sh' /usr/share/doc/$PROG_NAME/
+    chmod 755 /usr/share/doc/$PROG_NAME/install.sh
+    chmod 755 /usr/share/doc/$PROG_NAME/uninstall.sh
+
     # Права
     chmod +x $INSTALL_DIR/$PROG_NAME
     chmod 755 $INSTALL_DIR/usr/share/$PROG_NAME/scripts

@@ -4,7 +4,16 @@ echo -e "\033[1;36m========================================\033[0m"
 echo -e "\033[1;36mУстановка пакетов по списку\033[0m"
 echo -e "\033[1;36m========================================\033[0m"
 
-PACKAGES_FILE="$HOME/.config/alt-kde-helper/user_packages.txt"
+# Определяем текущую версию программы
+VERSION_FILE="/usr/share/doc/alt-kde-helper/version.txt"
+if [ -f "$VERSION_FILE" ]; then
+    VERSION=$(cat "$VERSION_FILE" | tr -d '\n')
+else
+    echo -e "\033[1;31m❌ Ошибка: не удалось определить версию программы\033[0m"
+    exit 1
+fi
+
+PACKAGES_FILE="$HOME/.config/alt-kde-helper/user_packages_${VERSION}.txt"
 
 if [ ! -f "$PACKAGES_FILE" ]; then
     echo -e "\033[1;31m❌ Ошибка: файл со списком пакетов не найден\033[0m"
@@ -23,10 +32,12 @@ fi
 # Собираем список пакетов из файла, пропуская пустые строки и комментарии
 PACKAGES=""
 while IFS= read -r line || [ -n "$line" ]; do
+    # Удаляем всё после # (включая сам #)
+    line="${line%%#*}"
     # Удаляем пробелы в начале и конце
     pkg=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    # Пропускаем пустые строки и строки, начинающиеся с #
-    if [ -n "$pkg" ] && [ "${pkg#\#}" = "$pkg" ]; then
+    # Пропускаем пустые строки
+    if [ -n "$pkg" ]; then
         PACKAGES="$PACKAGES $pkg"
     fi
 done < "$PACKAGES_FILE"

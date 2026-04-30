@@ -3,62 +3,67 @@
 # достаточно поставить знак # перед его названием.
 
 # Поддержка принтеров
-print-manager
-hplip-recommends
-printer-drivers-base
-# printer-driver-brlaser
-# printer-driver-capt
-# printer-driver-lbp660
-# printer-driver-lxx74
-# printer-driver-rname
-# printer-driver-Xerox-Phaser-3200MFP
+print-manager            # управление принтерами и сканерами в KDE
+hplip-recommends         # драйверы для принтеров и МФУ HP
+printer-drivers-base     # базовая поддержка принтеров
+# printer-driver-brlaser # драйвер для принтеров Brother
+# printer-driver-capt    # драйвер для принтеров Canon CAPT
+# printer-driver-lbp660  # драйвер для принтеров Canon LBP
+# printer-driver-lxx74   # драйвер для принтеров Lexmark X74/X75
+# printer-driver-rname   # драйвер для принтеров Riso
+# printer-driver-Xerox-Phaser-3200MFP   # драйвер для Xerox Phaser 3200 MFP
 
 # Поддержка сканирования
-skanlite
-sane-airscan
-airsane
-net-snmp
-avahi-daemon
-avahi-tools
+skanlite                 # программа для сканирования от KDE
+sane-airscan             # сканирование через сеть (WSD/eSCL)
+airsane                  # сканирование через AirPrint
 
 # Выбор зеркала репозитория
-# alt-mirror-switcher
-# alt-mirror-switcher-lists-branch
-# alt-mirror-switcher-lists-sisyphus
-
+# alt-mirror-switcher    # переключение зеркал репозитория (консольная)
+# alt-mirror-switcher-lists-branch    # список зеркал для стабильной ветки
+# alt-mirror-switcher-lists-sisyphus  # список зеркал для ветки Sisyphus (тестовый репозиторий)
 
 # Системные утилиты
-synaptic-usermode
-epmgpi
-eepm-play-gui
-gearlever
-android-tools
-gnome-disk-utility
-kcm-grub2
-kio-admin
+synaptic-usermode        # графический менеджер пакетов
+epmgpi                   # конвертация и установка пакетов других форматов, например, deb
+eepm-play-gui            # графический интерфейс для eepm - установка программ
+gearlever                # установка .appimage и размещение значка в меню приложений
+android-tools            # утилиты для работы с Android (adb, fastboot)
+gnome-disk-utility       # управление дисками и разделами (Disks)
+kcm-grub2                # настройка загрузчика GRUB в KDE
+kio-admin                # открытие папок с правами администратора из Dolphin
+kio-extras               # дополнительные протоколы для Dolphin (SMB, fish и др.)
 
 # Мультимедиа и кодеки
-pipewire-jack
-ffmpegthumbnailer
-mediainfo
+pipewire-jack            # поддержка JACK через PipeWire
+ffmpegthumbnailer        # создание миниатюр для видео в файловом менеджере
+kdegraphics-thumbnailers # миниатюры для изображений (PS, EPS, RAW)
+mediainfo                # подробная информация о медиафайлах (кодеки, битрейт)
 
 # Сеть и обмен файлами
-samba-usershares
-kdeconnect
-samba
-sabma-client
+kdeconnect               # синхронизация с телефоном и планшетом (KDE)
+samba                    # сервер для общих папок Windows
+samba-client             # доступ к сетевым папкам Windows
+samba-usershares         # создание общих папок через Dolphin
+kio-fuse                 # монтирование сетевых папок в файловую систему
+libnss-mdns              # резолвинг имён .local (чтобы Dolphin видел компьютеры в сети)
+netatalk                 # поддержка протокола AFP (для Mac)
+net-snmp                 # мониторинг сети через SNMP
+avahi-daemon             # обнаружение сервисов в сети (включая сканеры)
+avahi-tools              # диагностика Avahi
+traceroute               # трассировка сетевых маршрутов
+# smb4k                  # менеджер сетевых папок SMB
 
 # Разработка и версионирование
-git
+git                      # система контроля версий
 
 # Иконки и темы
-icon-theme-Papirus
-xdg-desktop-portal-gtk
+icon-theme-Papirus       # набор иконок Papirus
+xdg-desktop-portal-gtk   # пакет для правильной поддержки libadwaita в KDE
 
 # Интеграция с облачными сервисами
-kaccounts-providers
+kaccounts-providers      # поддержка облачных аккаунтов (Google, Nextcloud и др.)
 
 # Разное
-kamoso
-qmmp
-
+kamoso                   # веб-камера (фото/видео)
+qmmp                     # аудиоплейер

@@ -20,6 +20,157 @@ from config import (
 )
 
 
+def get_current_version():
+    """Возвращает текущую версию программы из version.txt"""
+    try:
+        # Пробуем прочитать из системного файла
+        version_file = '/usr/share/doc/alt-kde-helper/version.txt'
+        if os.path.exists(version_file):
+            with open(version_file, 'r') as f:
+                return f.read().strip()
+    except:
+        pass
+    # fallback
+    return '1.2.2'
+
+
+def get_config_dir():
+    """Возвращает путь к папке конфигурации программы"""
+    return os.path.expanduser('~/.config/alt-kde-helper')
+
+
+def get_packages_file_path():
+    """Возвращает путь к файлу списка пакетов для текущей версии"""
+    config_dir = get_config_dir()
+    version = get_current_version()
+    return os.path.join(config_dir, f'user_packages_{version}.txt')
+
+
+def get_default_packages_path():
+    """Возвращает путь к системному файлу со списком пакетов по умолчанию"""
+    return '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
+
+
+def ensure_packages_file(parent=None):
+    """
+    Проверяет наличие файла списка пакетов для текущей версии.
+    Если файла нет, показывает диалог миграции (при обновлении)
+    или просто копирует default (при первом запуске).
+    """
+    config_dir = get_config_dir()
+    os.makedirs(config_dir, exist_ok=True)
+
+    current_version = get_current_version()
+    target_file = get_packages_file_path()
+    default_file = get_default_packages_path()
+
+    # Если файл для текущей версии уже существует — просто возвращаем его
+    if os.path.exists(target_file):
+        return target_file
+
+    # Ищем старые файлы с другими версиями
+    old_files = glob.glob(os.path.join(config_dir, 'user_packages_*.txt'))
+    # Отфильтровываем .old.txt файлы
+    old_files = [f for f in old_files if not f.endswith('.old.txt')]
+
+    # Если нет старых файлов — первый запуск программы
+    if not old_files:
+        if os.path.exists(default_file):
+            shutil.copy2(default_file, target_file)
+        else:
+            # Если нет default — создаём пустой файл
+            open(target_file, 'w').close()
+        return target_file
+
+    # Есть старые файлы — значит, это обновление программы
+    # Сортируем по имени (версия в имени) и берём самый новый (последний)
+    old_files.sort()
+    latest_old_file = old_files[-1]
+
+    # Показываем диалог выбора
+    dialog = QDialog(parent) if parent else QDialog()
+    dialog.setWindowTitle("Обновление списка пакетов")
+    dialog.setMinimumWidth(550)
+
+    layout = QVBoxLayout()
+
+    # Заголовок
+    title = QLabel(f"<b>Обнаружена новая версия программы ({current_version})</b>")
+    title.setWordWrap(True)
+    layout.addWidget(title)
+
+    layout.addSpacing(10)
+
+    # Пояснение
+    info = QLabel("В новой версии изменён и дополнен список рекомендуемых пакетов.")
+    info.setWordWrap(True)
+    layout.addWidget(info)
+
+    layout.addSpacing(15)
+
+    # Радиокнопки
+    keep_radio = QRadioButton("Оставить мой текущий список")
+    keep_radio.setToolTip("Ваши личные изменения сохранятся, новые пакеты из обновления добавлены не будут")
+
+    replace_radio = QRadioButton("Заменить список новым (рекомендуется)")
+    replace_radio.setToolTip("Вы получите актуальный список пакетов для установки")
+    replace_radio.setChecked(True)  # по умолчанию выбран
+
+    layout.addWidget(keep_radio)
+    layout.addWidget(replace_radio)
+
+    layout.addSpacing(15)
+
+    # Путь к папке со старыми файлами (кликабельная ссылка)
+    folder_link = QLabel(
+        f'📁 <b>Ваш старый список не будет удалён.</b><br>'
+        f'Он останется в папке: <a href="file://{config_dir}">{config_dir}</a>'
+    )
+    folder_link.setWordWrap(True)
+    folder_link.setOpenExternalLinks(True)
+    layout.addWidget(folder_link)
+
+    layout.addSpacing(20)
+
+    # Кнопки
+    button_layout = QHBoxLayout()
+    ok_btn = QPushButton("Продолжить")
+    cancel_btn = QPushButton("Отмена")
+    button_layout.addStretch()
+    button_layout.addWidget(ok_btn)
+    button_layout.addWidget(cancel_btn)
+    layout.addLayout(button_layout)
+
+    dialog.setLayout(layout)
+
+    def on_ok():
+        dialog.done(1)
+
+    def on_cancel():
+        dialog.done(0)
+
+    ok_btn.clicked.connect(on_ok)
+    cancel_btn.clicked.connect(on_cancel)
+
+    result = dialog.exec()
+
+    if result == 0:  # Отмена
+        # Пользователь отменил — выходим, файл не создаём
+        return None
+
+    if replace_radio.isChecked():
+        # Заменить новым списком
+        if os.path.exists(default_file):
+            shutil.copy2(default_file, target_file)
+        else:
+            open(target_file, 'w').close()
+    else:
+        # Оставить текущий список — копируем старый файл в новый с текущей версией
+        shutil.copy2(latest_old_file, target_file)
+
+    return target_file
+
+
 class ActionWorker(QThread):
     """Поток для выполнения действий в терминале"""
     finished = pyqtSignal()
@@ -642,15 +793,8 @@ class MainWindow(QMainWindow):
         # Запускаем скрипт проверки состояния системы после создания страниц
         self.run_check_state()
 
-        # Создаём user_packages.txt из стандартного, только если файла не существует
-        packages_file = os.path.expanduser('~/.config/alt-kde-helper/user_packages.txt')
-        default_file = '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
-        os.makedirs(os.path.dirname(packages_file), exist_ok=True)
-        if not os.path.exists(packages_file):
-            if os.path.exists(default_file):
-                shutil.copy2(default_file, packages_file)
-            else:
-                open(packages_file, 'w').close()
+        # Создаём/обновляем список пакетов с учётом версии
+        ensure_packages_file(self)
 
         # Обновляем состояние карточек после проверки
         for card in self.get_all_cards():
@@ -686,11 +830,16 @@ class MainWindow(QMainWindow):
         edit_packages_action.triggered.connect(self.edit_packages_list)
         menu.addAction(edit_packages_action)
 
+        open_folder_action = QAction("Открыть папку со списком пакетов", self)
+        open_folder_action.triggered.connect(self.open_packages_folder)
+        menu.addAction(open_folder_action)
+
         reset_packages_action = QAction("Восстановить список пакетов по умолчанию", self)
         reset_packages_action.triggered.connect(self.reset_packages_list)
         menu.addAction(reset_packages_action)
 
         menu.exec(self.menu_button.mapToGlobal(QPoint(0, self.menu_button.height())))
+
 
     def closeEvent(self, event: QCloseEvent):
         if hasattr(self, 'maintenance_page'):
@@ -977,15 +1126,16 @@ class MainWindow(QMainWindow):
 
     def edit_packages_list(self):
         import subprocess
-        packages_file = os.path.expanduser('~/.config/alt-kde-helper/user_packages.txt')
-        os.makedirs(os.path.dirname(packages_file), exist_ok=True)
+        packages_file = get_packages_file_path()
+        config_dir = get_config_dir()
+        os.makedirs(config_dir, exist_ok=True)
 
+        # Если файла нет — создаём из default
         if not os.path.exists(packages_file):
-            default_file = '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
+            default_file = get_default_packages_path()
             if os.path.exists(default_file):
                 shutil.copy2(default_file, packages_file)
             else:
-                # Если нет ни user, ни default — создаём пустой файл
                 open(packages_file, 'w').close()
 
         if subprocess.run(['which', 'kate'], capture_output=True).returncode == 0:
@@ -998,23 +1148,95 @@ class MainWindow(QMainWindow):
         subprocess.Popen([editor, packages_file])
 
     def reset_packages_list(self):
-        msg = QMessageBox(self)
-        msg.setWindowTitle("Восстановление списка пакетов")
-        msg.setText("Восстановить список пакетов по умолчанию?")
-        msg.setInformativeText("Текущий список будет потерян.")
-        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QMessageBox.StandardButton.No)
+        config_dir = get_config_dir()
+        current_version = get_current_version()
+        current_file = get_packages_file_path()
+        backup_file = os.path.join(config_dir, f'user_packages_{current_version}.old.txt')
+        default_file = get_default_packages_path()
 
-        if msg.exec() == QMessageBox.StandardButton.Yes:
-            default_file = '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
-            packages_file = os.path.expanduser('~/.config/alt-kde-helper/user_packages.txt')
-            os.makedirs(os.path.dirname(packages_file), exist_ok=True)
+        # Создаём кастомный диалог с пояснениями и ссылкой
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Восстановление списка пакетов")
+        dialog.setMinimumWidth(500)
 
-            if os.path.exists(default_file):
-                shutil.copy2(default_file, packages_file)
-                QMessageBox.information(self, "Готово", "Список пакетов восстановлен")
-            else:
-                QMessageBox.warning(self, "Ошибка", "Файл со стандартным списком не найден")
+        layout = QVBoxLayout()
+
+        # Предупреждение
+        warning = QLabel("<b>Восстановление списка пакетов по умолчанию</b>")
+        warning.setWordWrap(True)
+        layout.addWidget(warning)
+
+        layout.addSpacing(10)
+
+        # Пояснение
+        info = QLabel("Вы хотите заменить ваш текущий список пакетов на стандартный список по умолчанию (который идёт с программой).")
+        info.setWordWrap(True)
+        layout.addWidget(info)
+
+        layout.addSpacing(15)
+
+        # Информация о бэкапе (кликабельная ссылка)
+        backup_info = QLabel(
+            f'📁 <b>Ваш текущий список не будет удалён.</b><br>'
+            f'Он будет сохранён в той же папке как:<br>'
+            f'<tt>user_packages_{current_version}.old.txt</tt><br><br>'
+            f'Папка с настройками: <a href="file://{config_dir}">{config_dir}</a><br><br>'
+            f'Если вы передумаете, вы сможете удалить новый список, а ваш старый<br>'
+            f'переименовать обратно в <tt>user_packages_{current_version}.txt</tt> вручную.'
+        )
+        backup_info.setWordWrap(True)
+        backup_info.setOpenExternalLinks(True)
+        layout.addWidget(backup_info)
+
+        layout.addSpacing(20)
+
+        # Кнопки
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton("Восстановить")
+        cancel_btn = QPushButton("Отмена")
+        button_layout.addStretch()
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+
+        dialog.setLayout(layout)
+
+        def on_ok():
+            dialog.done(1)
+
+        def on_cancel():
+            dialog.done(0)
+
+        ok_btn.clicked.connect(on_ok)
+        cancel_btn.clicked.connect(on_cancel)
+
+        result = dialog.exec()
+
+        if result == 0:  # Отмена
+            return
+
+        # Выполняем восстановление
+        # Если бэкап уже существует — удаляем его (держим только один последний)
+        if os.path.exists(backup_file):
+            os.remove(backup_file)
+
+        # Переименовываем текущий файл в .old.txt
+        if os.path.exists(current_file):
+            os.rename(current_file, backup_file)
+
+        # Копируем default → current
+        if os.path.exists(default_file):
+            shutil.copy2(default_file, current_file)
+        else:
+            open(current_file, 'w').close()
+
+        QMessageBox.information(self, "Готово", "Список пакетов восстановлен.\n\nВаш старый список сохранён как .old.txt")
+
+    def open_packages_folder(self):
+        """Открывает папку с настройками программы в Dolphin"""
+        config_dir = get_config_dir()
+        os.makedirs(config_dir, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(config_dir))
 
     def create_fixes_page(self):
         cards = []
@@ -1148,8 +1370,8 @@ class MainWindow(QMainWindow):
         cards.append(MirrorCard())
 
         cards.append(SimpleActionCard(
-            "Установка/переустановка рекомендованных пакетов",
-            "Устанавливает пакеты из списка ~/.config/alt-kde-helper/user_packages.txt.\nСписок можно редактировать через меню в верхнем левом углу окна приложения",
+            "Установка рекомендованных пакетов",
+            f"Устанавливает пакеты из списка {get_packages_file_path()}\nСписок можно редактировать через меню в верхнем левом углу окна приложения",
             "07_install_packages_action.sh"
         ))
 
@@ -1178,3 +1400,15 @@ class MainWindow(QMainWindow):
         ))
 
         return CategoryPage(cards)
+
+
+def run():
+    app = QApplication(sys.argv)
+    app.setStyleSheet(STYLESHEET)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    run()

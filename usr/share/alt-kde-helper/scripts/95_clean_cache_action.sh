@@ -30,6 +30,9 @@ sudo journalctl --vacuum-size=100M
 echo -e "\033[1;33m→ Очистка кэша пользователя...\033[0m"
 rm -rf ~/.cache/*
 
+echo -e "\033[1;33m→ Очистка корзины...\033[0m"
+rm -rf ~/.local/share/Trash/{files,info}/*
+
 echo -e "\033[1;33m→ Очистка кэша Flatpak...\033[0m"
 rm -rf ~/.var/app/*/cache/*
 

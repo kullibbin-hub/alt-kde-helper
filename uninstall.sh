@@ -31,6 +31,7 @@ if pkexec bash -c "
     rm -rf $REAL_HOME/.config/alt-kde-helper
     rm -rf /tmp/alt-kde-helper-actions
     rm -f /usr/share/icons/hicolor/scalable/apps/alt-kde-helper.svg
+    rm -rf /usr/share/doc/$PROG_NAME
 "; then
     echo -e "${GREEN}✓ Alt KDE Helper успешно удалён.${NC}"
 
