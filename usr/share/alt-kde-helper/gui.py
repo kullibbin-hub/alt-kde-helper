@@ -11,12 +11,13 @@ from PyQt6.QtWidgets import (
     QScrollArea, QMessageBox, QPushButton, QButtonGroup, QDialog, QApplication,
     QMenu, QRadioButton
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent
 from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction
 
 from config import (
-    STYLESHEET, get_scripts_dir, get_state_dir, get_actions_dir,
-    clear_actions_dir, get_help_path, get_version
+    get_stylesheet, get_scripts_dir, get_state_dir, get_actions_dir,
+    clear_actions_dir, get_help_path, get_version,
+    load_theme_setting, save_theme_setting, is_dark_theme
 )
 
 
@@ -801,6 +802,30 @@ class MainWindow(QMainWindow):
             if hasattr(card, 'load_state'):
                 card.load_state()
 
+    def showEvent(self, event):
+        """Переприменяем стили при первом показе окна"""
+        super().showEvent(event)
+        # Принудительно обновляем стили после того, как окно появилось
+        saved = load_theme_setting()
+        if saved is not None:
+            QApplication.instance().setStyleSheet(get_stylesheet(force_dark=saved))
+        else:
+            QApplication.instance().setStyleSheet(get_stylesheet())
+
+
+    def event(self, event):
+        if event.type() == QEvent.Type.ApplicationPaletteChange:
+            # Тема оформления изменилась — обновляем стили с учётом сохранённой настройки
+            saved = load_theme_setting()
+            if saved is not None:
+                # Если пользователь явно выбрал тему, используем её
+                QApplication.instance().setStyleSheet(get_stylesheet(force_dark=saved))
+            else:
+                # Иначе автоопределение
+                QApplication.instance().setStyleSheet(get_stylesheet())
+            return True
+        return super().event(event)
+
     def run_check_state(self):
         """Запускает скрипт проверки состояния системы"""
         check_state_script = os.path.join(get_scripts_dir(), 'check_state.sh')
@@ -838,8 +863,26 @@ class MainWindow(QMainWindow):
         reset_packages_action.triggered.connect(self.reset_packages_list)
         menu.addAction(reset_packages_action)
 
+        menu.addSeparator()
+
+        # Пункт переключения темы
+        theme_action = QAction("Тёмная тема", self)
+        theme_action.setCheckable(True)
+        saved = load_theme_setting()
+        if saved is None:
+            # Не задано — определяем автоматически
+            theme_action.setChecked(is_dark_theme())
+        else:
+            theme_action.setChecked(saved)
+        theme_action.triggered.connect(self.toggle_theme)
+        menu.addAction(theme_action)
+
         menu.exec(self.menu_button.mapToGlobal(QPoint(0, self.menu_button.height())))
 
+    def toggle_theme(self, checked):
+        """Переключает тему (checked = True — тёмная, False — светлая)"""
+        save_theme_setting(checked)
+        QApplication.instance().setStyleSheet(get_stylesheet(force_dark=checked))
 
     def closeEvent(self, event: QCloseEvent):
         if hasattr(self, 'maintenance_page'):
@@ -1404,7 +1447,12 @@ class MainWindow(QMainWindow):
 
 def run():
     app = QApplication(sys.argv)
-    app.setStyleSheet(STYLESHEET)
+    # Применяем стили с учётом сохранённой настройки темы
+    saved = load_theme_setting()
+    if saved is not None:
+        app.setStyleSheet(get_stylesheet(force_dark=saved))
+    else:
+        app.setStyleSheet(get_stylesheet())
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

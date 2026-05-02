@@ -1,69 +1,118 @@
 # config.py - конфигурация и стили Alt KDE Helper
 
 import os
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QPalette
 
-STYLESHEET = """
-QMainWindow {
+# Файл для сохранения настройки темы
+def get_theme_config_path():
+    """Возвращает путь к файлу с настройкой темы"""
+    config_dir = os.path.expanduser('~/.config/alt-kde-helper')
+    os.makedirs(config_dir, exist_ok=True)
+    return os.path.join(config_dir, 'theme.conf')
+
+def save_theme_setting(is_dark):
+    """Сохраняет настройку темы (dark=true/false)"""
+    with open(get_theme_config_path(), 'w') as f:
+        f.write('dark=true\n' if is_dark else 'dark=false\n')
+
+def load_theme_setting():
+    """Загружает настройку темы, если файла нет — None (авто)"""
+    try:
+        with open(get_theme_config_path(), 'r') as f:
+            content = f.read().strip()
+            return 'dark=true' in content
+    except:
+        return None  # не задано — использовать системное определение
+
+def is_dark_theme():
+    """Определяет, используется ли тёмная тема оформления (авто)"""
+    app = QApplication.instance()
+    if not app:
+        return False
+    text_color = app.palette().color(QPalette.ColorRole.WindowText)
+    bg_color = app.palette().color(QPalette.ColorRole.Window)
+    return text_color.lightness() > bg_color.lightness()
+
+def get_stylesheet(force_dark=None):
+    """
+    Возвращает стили в зависимости от темы.
+    force_dark = True  -> тёмная тема
+    force_dark = False -> светлая тема
+    force_dark = None  -> автоопределение (по QPalette)
+    """
+    if force_dark is None:
+        is_dark = is_dark_theme()
+    else:
+        is_dark = force_dark
+
+    if is_dark:
+        # Тёмная тема: тёмно-зелёный фон, светлый текст
+        green_bg = "#1a4d1a"      # тёмно-зелёный фон карточки
+        green_text = "#66ff66"     # ярко-зелёный текст
+        orange_bg = "#4a2a1a"      # тёмно-оранжевый фон
+        orange_text = "#ffa366"    # светло-оранжевый текст
+    else:
+        # Светлая тема: светлый фон, тёмный текст
+        green_bg = "#e8f5e9"       # светло-зелёный фон карточки
+        green_text = "#2e7d32"     # тёмно-зелёный текст
+        orange_bg = "#fff0e0"      # светло-оранжевый фон
+        orange_text = "#d35400"     # тёмно-оранжевый текст
+
+    return f"""
+QMainWindow {{
     background-color: palette(window);
-}
+}}
 
 /* Общий стиль для всех карточек */
 QFrame[class="ActionCard"],
 QFrame[class="SimpleActionCard"],
-QFrame[class="MirrorCard"] {
+QFrame[class="MirrorCard"] {{
     background-color: palette(base);
     border: 1px solid palette(mid);
     border-radius: 6px;
     margin-top: 2px;
     margin-bottom: 2px;
-}
+}}
 
 /* Карточка с выбранным действием (оранжевый фон) */
 QFrame[class="ActionCardOrange"],
-QFrame[class="SimpleActionCardOrange"] {
-    background-color: #fff0e0;
-    border: 1px solid #d35400;
+QFrame[class="SimpleActionCardOrange"] {{
+    background-color: {orange_bg};
+    border: 1px solid {orange_text};
     border-radius: 6px;
     margin-top: 2px;
     margin-bottom: 2px;
-}
+}}
 
 /* Карточка с применённым действием (зелёный фон) */
 QFrame[class="ActionCardGreen"],
-QFrame[class="SimpleActionCardGreen"] {
-    background-color: #e8f5e9;
-    border: 1px solid #2e7d32;
+QFrame[class="SimpleActionCardGreen"] {{
+    background-color: {green_bg};
+    border: 1px solid {green_text};
     border-radius: 6px;
     margin-top: 2px;
     margin-bottom: 2px;
-}
+}}
 
-/* Текст внутри карточек (без отдельного фона) */
-QLabel[class="Description"],
-QLabel[class="DescriptionOrange"],
-QLabel[class="DescriptionGreen"] {
-    font-weight: normal;
-    padding: 4px;
-    border-radius: 3px;
-}
+/* Текст внутри карточек */
+QLabel[class="DescriptionOrange"] {{
+    color: {orange_text};
+}}
 
-QLabel[class="DescriptionOrange"] {
-    color: #d35400;
-}
-
-QLabel[class="DescriptionGreen"] {
-    color: #2e7d32;
-}
+QLabel[class="DescriptionGreen"] {{
+    color: {green_text};
+}}
 
 /* Кнопки внизу */
-QPushButton[class="BottomButton"] {
+QPushButton[class="BottomButton"] {{
     padding: 8px 16px;
     font-weight: bold;
     min-width: 120px;
-}
+}}
 
 /* Кнопки вкладок */
-QPushButton[class="TabButton"] {
+QPushButton[class="TabButton"] {{
     text-align: center;
     padding: 8px 12px;
     margin-left: 5px;
@@ -73,19 +122,22 @@ QPushButton[class="TabButton"] {
     border-radius: 4px;
     background-color: transparent;
     color: palette(text);
-}
-QPushButton[class="TabButton"]:hover {
+}}
+QPushButton[class="TabButton"]:hover {{
     background-color: palette(alternate-base);
-}
-QPushButton[class="TabButtonActive"] {
+}}
+QPushButton[class="TabButtonActive"] {{
     text-align: center;
     padding: 8px 12px;
     margin-left: 5px;
     margin-right: 5px;
     background-color: palette(highlight);
     color: palette(highlighted-text);
-}
+}}
 """
+
+# Для обратной совместимости (если где-то используется STYLESHEET напрямую)
+STYLESHEET = get_stylesheet()
 
 def get_scripts_dir():
     base_dir = os.path.dirname(os.path.abspath(__file__))
