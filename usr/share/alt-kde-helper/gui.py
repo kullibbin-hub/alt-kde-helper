@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QScrollArea, QMessageBox, QPushButton, QButtonGroup, QDialog, QApplication,
     QMenu, QRadioButton
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent, QSize
 from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction
 
 from config import (
@@ -645,8 +645,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
-        self.setMinimumSize(800, 640)
-        self.resize(800, 640)
+        self.setMinimumSize(800, 600)
+        self.resize(800, 600)
 
         clear_actions_dir()
 
@@ -672,7 +672,7 @@ class MainWindow(QMainWindow):
         # Кнопка-меню с системной иконкой KDE
         self.menu_button = QPushButton()
         self.menu_button.setIcon(QIcon.fromTheme("application-menu"))
-        self.menu_button.setIconSize(self.menu_button.sizeHint())
+        self.menu_button.setIconSize(QSize(22, 22))   # ← как в Dolphin
         self.menu_button.setFixedSize(40, 40)
         self.menu_button.setToolTip("Меню")
         self.menu_button.setStyleSheet("""
@@ -686,8 +686,38 @@ class MainWindow(QMainWindow):
                 border: 1px solid palette(mid);
             }
         """)
+
         self.menu_button.clicked.connect(self.show_menu)
-        left_panel_layout.addWidget(self.menu_button, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        # Контейнер для кнопки меню и текста
+        menu_container = QWidget()
+        menu_container.setContentsMargins(0, 0, 0, 0)
+        menu_container.setAutoFillBackground(True)
+        palette = menu_container.palette()
+        palette.setColor(menu_container.backgroundRole(), palette.color(QPalette.ColorRole.Window))
+        menu_container.setPalette(palette)
+        menu_layout = QHBoxLayout()
+        menu_layout.setContentsMargins(2, 2, 2, 2)
+        menu_layout.setSpacing(5)
+
+        menu_layout.addWidget(self.menu_button)
+
+        menu_label = QLabel("Меню")
+        menu_label.setStyleSheet("color: palette(text); font-size: 14px;")
+        menu_layout.addWidget(menu_label)
+        menu_layout.addStretch()
+
+        menu_container.setLayout(menu_layout)
+        left_panel_layout.addWidget(menu_container)
+
+        # Горизонтальная линия-разделитель под меню
+
+        menu_line = QFrame()
+        menu_line.setFrameShape(QFrame.Shape.HLine)
+        menu_line.setFrameShadow(QFrame.Shadow.Sunken)
+        menu_line.setFixedHeight(0)
+        menu_line.setStyleSheet("background-color: palette(window);")
+        left_panel_layout.addWidget(menu_line)
 
         left_panel_layout.addSpacing(20)
 
@@ -1313,6 +1343,7 @@ class MainWindow(QMainWindow):
             "18_install_papirus_icons_action.sh"
         ))
 
+
         cards.append(SimpleActionCard(
             "Добавить пользователя в группы (dialout, lp, adbusers)",
             "Добавляет текущего пользователя в группы \nдля доступа к USB-устройствам",
@@ -1322,6 +1353,13 @@ class MainWindow(QMainWindow):
         # ============================================================
         # С откатом (ActionCard)
         # ============================================================
+
+        cards.append(ActionCard(
+            "Установка virtualbox со всеми дополнениями",
+            "Установка virtualbox со всеми дополнениями, отключение KVM.\nОткат удаляет virtualbox и возвращает KVM обратно.",
+            "24_install_virtualbox_action.sh",
+            "24_install_virtualbox_rollback.sh"
+        ))
 
         flatpak_card = ActionCard(
             "Установка Flatpak",
@@ -1419,6 +1457,12 @@ class MainWindow(QMainWindow):
         ))
 
         cards.append(SimpleActionCard(
+            "Обновление ядра и модулей",
+            "Обновление ядра и модулей. Следите за сообщениями в терминале!",
+            "23_update_kernel_action.sh"
+        ))
+
+        cards.append(SimpleActionCard(
             "Ремонт apt-get при ошибках",
             "apt-get dedup && pm --rebuilddb",
             "01_repair_apt_action.sh"
@@ -1429,6 +1473,17 @@ class MainWindow(QMainWindow):
             "Пересоздание кэша packagekit.\nУстраняет ошибку, когда Discover не подключается к сети\nпосле удаления локального прокси.",
             "09_fix_discover_proxy_action.sh"
         ))
+
+        # Заголовок для группы обслуживания
+        title_widget = QWidget()
+        title_layout = QHBoxLayout()
+        title_layout.setContentsMargins(0, 10, 0, 5)
+        title_label = QLabel("<b>Текущее обслуживание системы</b>")
+        title_label.setStyleSheet("font-size: 14px; color: palette(text);")
+        title_layout.addWidget(title_label)
+        title_layout.addStretch()
+        title_widget.setLayout(title_layout)
+        cards.append(title_widget)
 
         cards.append(SimpleActionCard(
             "Обновление системы и программ из всех источников",

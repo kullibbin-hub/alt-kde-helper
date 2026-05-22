@@ -159,4 +159,11 @@ if systemctl is-enabled --quiet smb 2>/dev/null && systemctl is-active --quiet s
     touch "$STATE_DIR/22_enable_samba_action.sh"
 fi
 
+# ============================================================
+# 18. Установка VirtualBox (24_install_virtualbox_action.sh)
+# ============================================================
+
+if command -v vboxmanage &>/dev/null && vboxmanage list extpacks 2>/dev/null | grep -q "Oracle VirtualBox Extension Pack"; then
+    touch "$STATE_DIR/24_install_virtualbox_action.sh"
+fi
 echo -e "\033[1;32m✅ Состояние системы проверено, флаги обновлены\033[0m"

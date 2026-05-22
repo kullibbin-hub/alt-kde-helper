@@ -12,6 +12,7 @@ printer-drivers-base     # базовая поддержка принтеров
 # printer-driver-lxx74   # драйвер для принтеров Lexmark X74/X75
 # printer-driver-rname   # драйвер для принтеров Riso
 # printer-driver-Xerox-Phaser-3200MFP   # драйвер для Xerox Phaser 3200 MFP
+# gutenprint-cups-ppds
 
 # Поддержка сканирования
 skanlite                 # программа для сканирования от KDE
