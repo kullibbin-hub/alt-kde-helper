@@ -34,6 +34,7 @@ gnome-disk-utility       # управление дисками и раздела
 kcm-grub2                # настройка загрузчика GRUB в KDE
 kio-admin                # открытие папок с правами администратора из Dolphin
 kio-extras               # дополнительные протоколы для Dolphin (SMB, fish и др.)
+timeshift                # бэкап системы и конфигов пользователя
 
 # Мультимедиа и кодеки
 pipewire-jack            # поддержка JACK через PipeWire

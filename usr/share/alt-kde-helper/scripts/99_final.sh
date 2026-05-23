@@ -12,7 +12,7 @@ FLAG_FILE="/tmp/alt-kde-helper-needs-reboot"
 REMAINING=$(ls "$QUEUE_DIR" 2>/dev/null | grep -v "final.sh" | sort)
 
 if [ -z "$REMAINING" ]; then
-    echo -e "\033[1;32m✅ Все действия выполнены успешно!\033[0m"
+    echo -e "\033[1;32m✅ Все действия выполнены.\033[0m"
 else
     echo -e "\033[1;33m⚠ Следующие действия не выполнены (ошибки):\033[0m"
     echo ""
