@@ -1345,8 +1345,8 @@ class MainWindow(QMainWindow):
 
 
         cards.append(SimpleActionCard(
-            "Добавить пользователя в группы (dialout, lp, adbusers)",
-            "Добавляет текущего пользователя в группы \nдля доступа к USB-устройствам",
+            "Добавить себя в группы dialout, lp, adbusers + доступ к USBasp",
+            "Добавляет текущего пользователя в группы \nдля доступа к USB и правила udev для USBasp устройств",
             "08_add_groups_action.sh"
         ))
 

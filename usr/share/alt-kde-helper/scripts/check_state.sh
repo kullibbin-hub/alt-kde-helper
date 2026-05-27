@@ -44,7 +44,14 @@ USER_NAME="$USER"
 IN_DIALOUT=$(groups "$USER_NAME" | grep -q "dialout" && echo "yes" || echo "no")
 IN_LP=$(groups "$USER_NAME" | grep -q "lp" && echo "yes" || echo "no")
 
-if [ "$IN_DIALOUT" = "yes" ] && [ "$IN_LP" = "yes" ]; then
+# Проверяем наличие правила USBasp
+USBASP_RULE="/etc/udev/rules.d/99-usbasp.rules"
+USBASP_OK=0
+if [ -f "$USBASP_RULE" ]; then
+    USBASP_OK=1
+fi
+
+if [ "$IN_DIALOUT" = "yes" ] && [ "$IN_LP" = "yes" ] && [ "$USBASP_OK" -eq 1 ]; then
     # Проверяем группу adbusers (только если существует)
     if getent group adbusers >/dev/null 2>&1; then
         # Группа существует — проверяем, входит ли пользователь
