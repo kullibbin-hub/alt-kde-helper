@@ -13,7 +13,7 @@ if ! command -v epm &> /dev/null; then
     if [ $? -ne 0 ]; then
         echo -e "\033[1;31m❌ Ошибка: не удалось установить eepm\033[0m"
         echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало\033[0m"
-        bash "$(dirname "$0")/04_repo_p11_action.sh"
+        bash /opt/alt-kde-helper/usr/share/alt-kde-helper/scripts/04_repo_p11_action.sh
         rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
         exit 0
     fi
@@ -26,8 +26,8 @@ sudo epm repo mirrors auto
 
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: не удалось настроить быстрое зеркало\033[0m"
-    echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало p11\033[0m"
-    bash "$(dirname "$0")/04_repo_p11_action.sh"
+    echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало\033[0m"
+    bash /opt/alt-kde-helper/usr/share/alt-kde-helper/scripts/04_repo_p11_action.sh
     rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
     exit 0
 fi
@@ -47,8 +47,8 @@ sudo apt-get update
 
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: зеркало не работает или проблемы с соединением\033[0m"
-    echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало p11\033[0m"
-    bash "$(dirname "$0")/04_repo_p11_action.sh"
+    echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало\033[0m"
+    bash /opt/alt-kde-helper/usr/share/alt-kde-helper/scripts/04_repo_p11_action.sh
     rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
     exit 0
 fi
