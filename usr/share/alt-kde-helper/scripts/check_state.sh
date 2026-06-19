@@ -174,3 +174,29 @@ if command -v vboxmanage &>/dev/null && vboxmanage list extpacks 2>/dev/null | g
     touch "$STATE_DIR/24_install_virtualbox_action.sh"
 fi
 echo -e "\033[1;32m✅ Состояние системы проверено, флаги обновлены\033[0m"
+
+# ============================================================
+# 19. Создание профиля Konsole (25_create_console_profile.sh)
+# ============================================================
+
+KONSOLE_PROFILE_FILE="$HOME/.local/share/konsole/Белый_текст.profile"
+KONSOLERC="$HOME/.config/konsolerc"
+PROFILE_NAME_FOR_CONFIG="Белый_текст.profile"
+PROFILE_ACTIVE=0
+
+# Проверяем, существует ли файл профиля
+if [ -f "$KONSOLE_PROFILE_FILE" ]; then
+    # Проверяем, установлен ли он как профиль по умолчанию
+    if [ -f "$KONSOLERC" ] && grep -q "^DefaultProfile=$PROFILE_NAME_FOR_CONFIG" "$KONSOLERC"; then
+        PROFILE_ACTIVE=1
+    else
+        # Если не установлен как основной, проверяем через поиск в konsolerc
+        if [ -f "$KONSOLERC" ] && grep -q "DefaultProfile.*$PROFILE_NAME_FOR_CONFIG" "$KONSOLERC"; then
+            PROFILE_ACTIVE=1
+        fi
+    fi
+fi
+
+if [ "$PROFILE_ACTIVE" -eq 1 ]; then
+    touch "$STATE_DIR/25_create_console_profile.sh"
+fi

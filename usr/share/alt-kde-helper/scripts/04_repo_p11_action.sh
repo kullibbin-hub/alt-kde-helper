@@ -17,9 +17,9 @@ echo -e "\033[1;33m→ Обнаружена система: $RELEASE_INFO\033[0m
 # Выбираем репозиторий в зависимости от версии
 if echo "$RELEASE_INFO" | grep -qi "Sisyphus"; then
     REPO="sisyphus"
-elif echo "$RELEASE_INFO" | grep -qi "p11"; then
+elif echo "$RELEASE_INFO" | grep -q "ALT" && echo "$RELEASE_INFO" | grep -q "11"; then
     REPO="p11"
-elif echo "$RELEASE_INFO" | grep -qi "p12"; then
+elif echo "$RELEASE_INFO" | grep -q "ALT" && echo "$RELEASE_INFO" | grep -q "12"; then
     REPO="p12"
 else
     echo -e "\033[1;31m❌ Ошибка: не удалось определить версию дистрибутива\033[0m"

@@ -645,8 +645,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
-        self.setMinimumSize(800, 600)
-        self.resize(800, 600)
+        self.setMinimumSize(800, 620)
+        self.resize(800, 620)
 
         clear_actions_dir()
 
@@ -818,7 +818,8 @@ class MainWindow(QMainWindow):
             "05_update_system_action.sh",
             "95_clean_cache_action.sh",
             "06_install_eepm_action.sh",
-            "07_install_packages_action.sh"
+            "07_install_packages_action.sh",
+            "25_create_console_profile.sh"
         ]
 
         # Запускаем скрипт проверки состояния системы после создания страниц
@@ -831,6 +832,10 @@ class MainWindow(QMainWindow):
         for card in self.get_all_cards():
             if hasattr(card, 'load_state'):
                 card.load_state()
+
+        # Запускаем фоновую проверку обновлений
+        from threading import Thread
+        Thread(target=self.check_updates_background, daemon=True).start()
 
     def showEvent(self, event):
         """Переприменяем стили при первом показе окна"""
@@ -1164,6 +1169,35 @@ class MainWindow(QMainWindow):
             "<a href='https://github.com/kullibbin-hub/alt-kde-helper'>GitHub</a>"
         )
 
+    def check_updates_background(self):
+        """Фоновая проверка обновлений без показа диалога"""
+        import urllib.request
+        import json
+
+        current_version = get_version()
+        latest_version = None
+        release_url = None
+
+        try:
+            req = urllib.request.Request(
+                "https://api.github.com/repos/kullibbin-hub/alt-kde-helper/releases/latest",
+                headers={"User-Agent": "Alt KDE Helper"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+                latest_version = data.get("tag_name", "").lstrip("v")
+                release_url = data.get("html_url", "")
+        except Exception:
+            return  # Тихая ошибка — ничего не делаем
+
+        if latest_version and latest_version > current_version:
+            # Показываем системное уведомление через kdialog
+            subprocess.Popen([
+                "kdialog", "--passivepopup",
+                f"Доступна новая версия Alt KDE Helper: {latest_version}\nПерейдите в меню → Проверить обновление.",
+                "5"
+            ])
+
     def check_for_updates(self):
         import urllib.request
         import json
@@ -1348,6 +1382,12 @@ class MainWindow(QMainWindow):
             "Добавить себя в группы dialout, lp, adbusers + доступ к USBasp",
             "Добавляет текущего пользователя в группы \nдля доступа к USB и правила udev для USBasp устройств",
             "08_add_groups_action.sh"
+        ))
+
+        cards.append(SimpleActionCard(
+            "Создать профиль Konsole с ярким белым текстом",
+            "Создаёт профиль Konsole «Белый_текст» для лучшей читаемости.\nПосле применения перезапустите Konsole или выберите профиль вручную.",
+            "25_create_console_profile.sh"
         ))
 
         # ============================================================
