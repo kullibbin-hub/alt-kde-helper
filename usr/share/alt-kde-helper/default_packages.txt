@@ -16,6 +16,7 @@ printer-drivers-base     # базовая поддержка принтеров
 
 # Поддержка сканирования
 skanlite                 # программа для сканирования от KDE
+skanpage                 # сканирование в многостраничный pdf
 sane-airscan             # сканирование через сеть (WSD/eSCL)
 airsane                  # сканирование через AirPrint
 

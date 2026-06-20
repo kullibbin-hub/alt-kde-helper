@@ -1201,6 +1201,9 @@ class MainWindow(QMainWindow):
     def check_for_updates(self):
         import urllib.request
         import json
+        import subprocess
+        import os
+        import sys
 
         current_version = get_version()
 
@@ -1213,23 +1216,83 @@ class MainWindow(QMainWindow):
                 data = json.loads(response.read().decode())
                 latest_version = data.get("tag_name", "").lstrip("v")
                 release_url = data.get("html_url", "")
-
-            if latest_version and latest_version > current_version:
-                msg = QMessageBox(self)
-                msg.setWindowTitle("Доступно обновление")
-                msg.setText(f"Доступна новая версия: {latest_version}\n\nВаша версия: {current_version}\n\nПерейти на страницу загрузки?")
-                msg.setInformativeText("На странице GitHub вы сможете посмотреть изменения и скачать новый RPM.")
-                msg.setStyleSheet("QLabel{min-width: 450px;}")
-                msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-                msg.setDefaultButton(QMessageBox.StandardButton.Yes)
-                if msg.exec() == QMessageBox.StandardButton.Yes:
-                    QDesktopServices.openUrl(QUrl(release_url))
-            elif latest_version:
-                QMessageBox.information(self, "Обновлений нет", f"У вас последняя версия {current_version}")
-            else:
-                QMessageBox.warning(self, "Ошибка", "Не удалось определить версию на GitHub")
         except Exception as e:
             QMessageBox.warning(self, "Ошибка", f"Не удалось проверить обновления:\n{str(e)}")
+            return
+
+        if not latest_version:
+            QMessageBox.warning(self, "Ошибка", "Не удалось определить версию на GitHub")
+            return
+
+        if latest_version <= current_version:
+            QMessageBox.information(self, "Обновлений нет", f"У вас последняя версия {current_version}")
+            return
+
+        # Диалог с предложением установить обновление
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Доступно обновление")
+        msg.setText(f"Доступна новая версия: {latest_version}\n\nВаша версия: {current_version}")
+        msg.setInformativeText("Установить обновление?")
+        install_btn = msg.addButton("Установить", QMessageBox.ButtonRole.AcceptRole)
+        cancel_btn = msg.addButton("Отмена", QMessageBox.ButtonRole.RejectRole)
+        msg.setDefaultButton(install_btn)
+        msg.exec()
+
+        if msg.clickedButton() != install_btn:
+            return
+
+        # Определяем папку загрузок
+        download_dir = os.path.expanduser("~/Загрузки")
+        if not os.path.exists(download_dir):
+            download_dir = os.path.expanduser("~/Downloads")
+
+        rpm_filename = f"alt-kde-helper-{latest_version}-alt1.noarch.rpm"
+        rpm_path = os.path.join(download_dir, rpm_filename)
+        rpm_url = f"https://github.com/kullibbin-hub/alt-kde-helper/releases/download/v{latest_version}/{rpm_filename}"
+
+        # Команда для Konsole: скачивание и установка
+        cmd = (
+            f"echo 'Скачивание обновления...' && "
+            f"wget -O '{rpm_path}' '{rpm_url}' && "
+            f"echo '' && "
+            f"echo 'Установка обновления...' && "
+            f"sudo apt-get install -y '{rpm_path}' && "
+            f"echo '' && "
+            f"echo '✅ Обновление установлено успешно!' && "
+            f"echo 'Пакет сохранён в: {rpm_path}' && "
+            f"echo '' && "
+            f"echo 'Нажмите любую клавишу для выхода...' && "
+            f"read -n 1"
+        )
+
+        # Запускаем Konsole с этой командой
+        process = subprocess.Popen(
+            ['konsole', '--new-tab', '--title', 'Установка обновления', '-e', 'bash', '-c', cmd],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        process.wait()
+
+        # Проверяем код возврата процесса (0 = успех)
+        if process.returncode == 0:
+            # Показываем сообщение об успехе с кнопкой перезапуска
+            restart_msg = QMessageBox(self)
+            restart_msg.setWindowTitle("Обновление установлено")
+            restart_msg.setText(
+                f"Пакет скачан в:\n{rpm_path}\n\n"
+                f"Обновление до версии {latest_version} установлено успешно!"
+            )
+            restart_msg.setInformativeText("Для применения изменений перезапустите программу.")
+            restart_btn = restart_msg.addButton("Перезапустить", QMessageBox.ButtonRole.AcceptRole)
+            restart_msg.addButton("Закрыть", QMessageBox.ButtonRole.RejectRole)
+            restart_msg.setDefaultButton(restart_btn)
+            restart_msg.exec()
+
+            if restart_msg.clickedButton() == restart_btn:
+                # Перезапуск программы
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+        else:
+            QMessageBox.critical(self, "Ошибка", "Не удалось установить обновление. Подробности смотрите в терминале.")
 
     def edit_packages_list(self):
         import subprocess
