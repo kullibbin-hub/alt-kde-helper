@@ -36,22 +36,64 @@ if ! command -v epm &>/dev/null; then
 fi
 
 # ============================================================
-# ШАГ 4: Установка VirtualBox через epm play (без проверки на ошибку)
+# ШАГ 4: Проверка, установлен ли VirtualBox
 # ============================================================
-echo -e "\033[1;33m→ Установка VirtualBox через epm...\033[0m"
-epm play -y virtualbox
+if rpm -q virtualbox &>/dev/null; then
+    echo -e "\033[1;33m→ VirtualBox уже установлен. Проверка модуля...\033[0m"
 
-# ============================================================
-# ШАГ 5: Проверяем наличие пакета модуля для текущей или будущей версии ядра
-# ============================================================
-if ! rpm -qa | grep "kernel-modules-virtualbox-" | grep -E "kernel-modules-virtualbox-.*($CURRENT_KERNEL_FLAVOUR|[0-9]+\.[0-9]+)" | sort -V | tail -1 | grep -q "$CURRENT_KERNEL_FLAVOUR"; then
-    echo -e "\033[1;31m❌ Модуль VirtualBox для ядра flavour $CURRENT_KERNEL_FLAVOUR или новее не установлен\033[0m"
-    kdialog --title "Ошибка установки модуля VirtualBox" \
-            --error "Модуль VirtualBox для ядра flavour $CURRENT_KERNEL_FLAVOUR или новее не установлен.\n\nВозможно, в репозитории нет модуля для вашего ядра.\n\nПопробуйте загрузиться с предыдущим ядром (выбрать в меню Grub) и повторить установку."
-    rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
-    exit 1
+    # Проверяем, установлен ли модуль для текущего ядра
+    if rpm -q "kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR" &>/dev/null; then
+        echo -e "\033[1;32m✓ Модуль VirtualBox для ядра $CURRENT_KERNEL_FLAVOUR уже установлен\033[0m"
+    else
+        echo -e "\033[1;33m→ Модуль VirtualBox для ядра $CURRENT_KERNEL_FLAVOUR не установлен\033[0m"
+
+        # Проверяем наличие модуля в репозитории
+        if apt-cache search --names-only "^kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR" | grep -q "kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR"; then
+            echo -e "\033[1;33m→ Установка модуля для ядра $CURRENT_KERNEL_FLAVOUR...\033[0m"
+            sudo apt-get install -y "kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR"
+            echo -e "\033[1;32m✓ Модуль установлен\033[0m"
+        else
+            echo -e "\033[1;31m❌ Модуль VirtualBox для ядра $CURRENT_KERNEL_FLAVOUR не найден в репозитории\033[0m"
+            echo -e "\033[1;33m→ VirtualBox может не работать. Требуется:\033[0m"
+            echo -e "\033[1;33m  1. Обновить ядро (через пункт 'Обновление ядра и модулей')\033[0m"
+            echo -e "\033[1;33m  2. Дождаться появления модуля в репозитории\033[0m"
+
+            kdialog --title "Модуль VirtualBox не найден" \
+                    --warningcontinuecancel "Модуль VirtualBox для ядра $CURRENT_KERNEL_FLAVOUR не найден.\n\nОбновите ядро через пункт 'Обновление ядра и модулей' или дождитесь появления модуля в репозитории.\n\nПродолжить без модуля (VirtualBox не будет работать)?"
+            if [ $? -ne 0 ]; then
+                rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
+                exit 0
+            fi
+        fi
+    fi
+else
+    # VirtualBox не установлен — проверяем модуль перед установкой
+    echo -e "\033[1;33m→ VirtualBox не установлен. Проверка модуля для ядра $CURRENT_KERNEL_FLAVOUR...\033[0m"
+
+    if apt-cache search --names-only "^kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR" | grep -q "kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR"; then
+        echo -e "\033[1;32m✓ Модуль найден. Установка VirtualBox...\033[0m"
+
+        # ============================================================
+        # ШАГ 5: Установка VirtualBox через epm play
+        # ============================================================
+        echo -e "\033[1;33m→ Установка VirtualBox через epm...\033[0m"
+        epm play -y virtualbox
+
+        # Проверяем, что модуль установился
+        if ! rpm -q "kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR" &>/dev/null; then
+            echo -e "\033[1;33m→ Модуль не установился автоматически. Установка вручную...\033[0m"
+            sudo apt-get install -y "kernel-modules-virtualbox-$CURRENT_KERNEL_FLAVOUR"
+        fi
+        echo -e "\033[1;32m✓ Модуль VirtualBox для ядра $CURRENT_KERNEL_FLAVOUR установлен\033[0m"
+    else
+        echo -e "\033[1;31m❌ Модуль VirtualBox для ядра $CURRENT_KERNEL_FLAVOUR не найден\033[0m"
+        echo -e "\033[1;33m→ Установка VirtualBox невозможна. Требуется обновить ядро.\033[0m"
+        kdialog --title "Установка VirtualBox невозможна" \
+                --error "Модуль VirtualBox для ядра $CURRENT_KERNEL_FLAVOUR не найден в репозитории.\n\nУстановка VirtualBox невозможна.\n\nОбновите ядро через пункт 'Обновление ядра и модулей'."
+        rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
+        exit 1
+    fi
 fi
-echo -e "\033[1;32m✓ Модуль VirtualBox для ядра flavour $CURRENT_KERNEL_FLAVOUR или новее установлен\033[0m"
 
 # ============================================================
 # Дополнительно: Добавление пользователя в группу vboxusers

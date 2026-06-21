@@ -170,10 +170,32 @@ fi
 # 18. Установка VirtualBox (24_install_virtualbox_action.sh)
 # ============================================================
 
-if command -v vboxmanage &>/dev/null && vboxmanage list extpacks 2>/dev/null | grep -q "Oracle VirtualBox Extension Pack"; then
-    touch "$STATE_DIR/24_install_virtualbox_action.sh"
+if command -v vboxmanage &>/dev/null; then
+    # Получаем версию VirtualBox
+    VB_VERSION=$(vboxmanage --version 2>/dev/null | cut -d'r' -f1)
+    if [ -z "$VB_VERSION" ]; then
+        VB_VERSION=$(rpm -q virtualbox --queryformat "%{VERSION}" 2>/dev/null | cut -d'-' -f1)
+    fi
+
+    if [ -n "$VB_VERSION" ]; then
+        # Проверяем Extension Pack
+        EXT_PACK_OK=0
+        if vboxmanage list extpacks 2>/dev/null | grep -q "Oracle VirtualBox Extension Pack"; then
+            EXT_PACK_OK=1
+        fi
+
+        # Проверяем модуль для текущего flavour ядра
+        FLAVOUR=$(uname -r | cut -d '.' -f1,2)
+        MODULE_PKG="kernel-modules-virtualbox-$FLAVOUR"
+        MODULE_VERSION=$(rpm -q "$MODULE_PKG" --queryformat "%{VERSION}" 2>/dev/null | cut -d'-' -f1)
+
+        # Сравниваем: Extension Pack установлен И версия модуля совпадает с версией VirtualBox
+        if [ "$EXT_PACK_OK" -eq 1 ] && [ -n "$MODULE_VERSION" ] && [ "$MODULE_VERSION" = "$VB_VERSION" ]; then
+            touch "$STATE_DIR/24_install_virtualbox_action.sh"
+        fi
+    fi
 fi
-echo -e "\033[1;32m✅ Состояние системы проверено, флаги обновлены\033[0m"
+
 
 # ============================================================
 # 19. Создание профиля Konsole (25_create_console_profile.sh)
