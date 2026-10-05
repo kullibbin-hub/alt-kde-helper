@@ -5,10 +5,11 @@ import shutil
 import subprocess
 import glob
 import signal
+import tarfile
 from PyQt6.QtWidgets import (
     QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel, QFrame,
     QScrollArea, QMessageBox, QPushButton, QButtonGroup, QDialog, QApplication,
-    QMenu, QRadioButton
+    QMenu, QRadioButton, QFileDialog
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent, QSize
 from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction
@@ -17,6 +18,11 @@ from config import (
     clear_actions_dir, get_help_path, get_version,
     load_theme_setting, save_theme_setting, is_dark_theme
 )
+
+# Путь к вшитому пресету панели
+PRESET_FILE_PATH = '/opt/alt-kde-helper/usr/share/alt-kde-helper/plasma-org.kde.plasma.desktop-appletsrc'
+# Имя файла настроек панели KDE
+PANEL_CONFIG_FILENAME = 'plasma-org.kde.plasma.desktop-appletsrc'
 
 def get_current_version():
     """Возвращает текущую версию программы из version.txt"""
@@ -790,6 +796,76 @@ class CategoryPage(QWidget):
         self.worker = None
         self._closing = False
 
+class AppearancePage(QWidget):
+    """Страница оформления с кнопками управления панелью"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout()
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        content = QWidget()
+        content_layout = QVBoxLayout()
+        content_layout.setSpacing(10)
+        content_layout.setContentsMargins(20, 20, 20, 20)
+
+        # Заголовок
+        title = QLabel("<b>Настройка панели</b>")
+        title.setStyleSheet("font-size: 16px; margin-bottom: 10px;")
+        content_layout.addWidget(title)
+
+        # Кнопка 1: Сделать область уведомления редактируемой
+        self.btn_editable_tray = QPushButton("Сделать область уведомления редактируемой")
+        self.btn_editable_tray.setProperty("class", "BottomButton")
+        self.btn_editable_tray.setMinimumHeight(50)
+        self.btn_editable_tray.setToolTip(
+            "Позволяет перемещать значки громкости, раскладки клавиатуры,\n"
+            "подключенных устройств в режиме редактирования панели.\n\n"
+            "Добавленные вручную виджеты будут удалены,\n"
+            "надо будет добавить их заново."
+        )
+        content_layout.addWidget(self.btn_editable_tray)
+
+        # Кнопка 2: Сохранить настройки виджетов панели
+        self.btn_save_panel = QPushButton("Сохранить настройки виджетов панели")
+        self.btn_save_panel.setProperty("class", "BottomButton")
+        self.btn_save_panel.setMinimumHeight(50)
+        self.btn_save_panel.setToolTip(
+            "Сохраняет текущие настройки панели и виджетов\n"
+            "в архив tar.gz. Выберите путь и имя файла."
+        )
+        content_layout.addWidget(self.btn_save_panel)
+
+        # Кнопка 3: Загрузить настройки виджетов панели
+        self.btn_load_panel = QPushButton("Загрузить настройки виджетов панели")
+        self.btn_load_panel.setProperty("class", "BottomButton")
+        self.btn_load_panel.setMinimumHeight(50)
+        self.btn_load_panel.setToolTip(
+            "Загружает настройки панели из ранее сохранённого\n"
+            "архива tar.gz. Выберите файл архива."
+        )
+        content_layout.addWidget(self.btn_load_panel)
+
+        # Кнопка 4: Вернуть расположение виджетов по умолчанию
+        self.btn_reset_panel = QPushButton("Вернуть расположение виджетов по умолчанию")
+        self.btn_reset_panel.setProperty("class", "BottomButton")
+        self.btn_reset_panel.setMinimumHeight(50)
+        self.btn_reset_panel.setToolTip(
+            "Удаляет текущие настройки панели и восстанавливает\n"
+            "заводские настройки по умолчанию.\n\n"
+            "Добавленные вручную виджеты будут удалены."
+        )
+        content_layout.addWidget(self.btn_reset_panel)
+
+        content_layout.addStretch()
+        content.setLayout(content_layout)
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+
+        self.setLayout(layout)
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -887,6 +963,13 @@ class MainWindow(QMainWindow):
         self.tab_btn_fixes.clicked.connect(lambda: self.switch_tab(1))
         left_panel_layout.addWidget(self.tab_btn_fixes)
 
+        self.tab_btn_appearance = QPushButton("Оформление")
+        self.tab_btn_appearance.setProperty("class", "TabButton")
+        self.tab_btn_appearance.setCheckable(True)
+        self.tab_btn_appearance.setMinimumHeight(50)
+        self.tab_btn_appearance.clicked.connect(lambda: self.switch_tab(2))
+        left_panel_layout.addWidget(self.tab_btn_appearance)
+
         left_panel_layout.addStretch()
 
         left_panel.setLayout(left_panel_layout)
@@ -904,11 +987,20 @@ class MainWindow(QMainWindow):
 
         self.maintenance_page = self.create_maintenance_page()
         self.fixes_page = self.create_fixes_page()
+        self.appearance_page = AppearancePage()
+
+        # Подключаем кнопки оформления
+        self.appearance_page.btn_editable_tray.clicked.connect(self.on_apply_editable_tray)
+        self.appearance_page.btn_save_panel.clicked.connect(self.on_save_panel_settings)
+        self.appearance_page.btn_load_panel.clicked.connect(self.on_load_panel_settings)
+        self.appearance_page.btn_reset_panel.clicked.connect(self.on_reset_panel_default)
 
         self.stack_layout.addWidget(self.maintenance_page)
         self.stack_layout.addWidget(self.fixes_page)
+        self.stack_layout.addWidget(self.appearance_page)
 
         self.fixes_page.setVisible(False)
+        self.appearance_page.setVisible(False)
 
         self.stack.setLayout(self.stack_layout)
         right_layout.addWidget(self.stack, 1)
@@ -1086,18 +1178,24 @@ class MainWindow(QMainWindow):
     def switch_tab(self, index):
         self.maintenance_page.setVisible(index == 0)
         self.fixes_page.setVisible(index == 1)
+        self.appearance_page.setVisible(index == 2)
 
         self.tab_btn_maintenance.setChecked(index == 0)
         self.tab_btn_fixes.setChecked(index == 1)
+        self.tab_btn_appearance.setChecked(index == 2)
 
         self.tab_btn_maintenance.setProperty("class", "TabButtonActive" if index == 0 else "TabButton")
         self.tab_btn_fixes.setProperty("class", "TabButtonActive" if index == 1 else "TabButton")
+        self.tab_btn_appearance.setProperty("class", "TabButtonActive" if index == 2 else "TabButton")
 
-        self.tab_btn_maintenance.style().unpolish(self.tab_btn_maintenance)
-        self.tab_btn_maintenance.style().polish(self.tab_btn_maintenance)
+        for btn in [self.tab_btn_maintenance, self.tab_btn_fixes, self.tab_btn_appearance]:
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
 
-        self.tab_btn_fixes.style().unpolish(self.tab_btn_fixes)
-        self.tab_btn_fixes.style().polish(self.tab_btn_fixes)
+        # На вкладке "Оформление" кнопки "Применить" и "Выбрать рекомендованные настройки" неактивны
+        is_appearance = (index == 2)
+        self.apply_btn.setEnabled(not is_appearance)
+        self.recommended_btn.setEnabled(not is_appearance)
 
     def get_all_cards(self):
         cards = []
@@ -1445,7 +1543,7 @@ class MainWindow(QMainWindow):
         # Команда для Konsole: скачивание и установка
         cmd = (
             f"echo 'Скачивание обновления...' && "
-            f"wget -O '{rpm_path}' '{rpm_url}' && "
+            f"wget -q -O '{rpm_path}' '{rpm_url}' && "
             f"echo '' && "
             f"echo 'Установка обновления...' && "
             f"sudo apt-get install -y '{rpm_path}' && "
@@ -1601,6 +1699,163 @@ class MainWindow(QMainWindow):
         config_dir = get_config_dir()
         os.makedirs(config_dir, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(config_dir))
+
+    # ============================================================
+    # Методы для вкладки "Оформление"
+    # ============================================================
+
+    def restart_plasmashell(self):
+        """Перезапускает plasmashell"""
+        subprocess.run(['killall', 'plasmashell'], capture_output=True)
+        subprocess.Popen(
+            ['bash', '-c', 'plasmashell --replace >/dev/null 2>&1 & disown'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+    def on_apply_editable_tray(self):
+        """Применяет вшитый пресет с редактируемым треем"""
+        target_file = os.path.expanduser(f'~/.config/{PANEL_CONFIG_FILENAME}')
+
+        if not os.path.exists(PRESET_FILE_PATH):
+            QMessageBox.critical(
+                self, "Ошибка",
+                f"Файл пресета не найден:\n{PRESET_FILE_PATH}"
+            )
+            return
+
+        try:
+            shutil.copy2(PRESET_FILE_PATH, target_file)
+            self.restart_plasmashell()
+            QMessageBox.information(
+                self, "Готово",
+                "Пресет с редактируемым треем применён.\n"
+                "Панель перезапущена."
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось применить пресет:\n{e}")
+
+    def on_save_panel_settings(self):
+        """Сохраняет текущие настройки панели в tar.gz"""
+        source_file = os.path.expanduser(f'~/.config/{PANEL_CONFIG_FILENAME}')
+
+        if not os.path.exists(source_file):
+            QMessageBox.warning(
+                self, "Ошибка",
+                f"Файл настроек панели не найден:\n{source_file}\n"
+                "Нечего сохранять."
+            )
+            return
+
+        # Диалог сохранения файла
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить настройки панели",
+            os.path.expanduser("~/"),
+            "Архив tar.gz (*.tar.gz)",
+            options=QFileDialog.Option.DontUseNativeDialog
+        )
+
+        if not file_path:
+            return
+
+        # Если пользователь не указал расширение — добавляем
+        if not file_path.endswith('.tar.gz'):
+            file_path += '.tar.gz'
+
+        try:
+            with tarfile.open(file_path, 'w:gz') as tar:
+                tar.add(source_file, arcname=PANEL_CONFIG_FILENAME)
+            QMessageBox.information(
+                self, "Готово",
+                f"Настройки панели сохранены в:\n{file_path}"
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить настройки:\n{e}")
+
+    def on_load_panel_settings(self):
+        """Загружает настройки панели из tar.gz"""
+        # Диалог выбора файла
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Загрузить настройки панели",
+            os.path.expanduser("~/"),
+            "Архив tar.gz (*.tar.gz)",
+            options=QFileDialog.Option.DontUseNativeDialog
+        )
+
+        if not file_path:
+            return
+
+        if not os.path.exists(file_path):
+            QMessageBox.critical(self, "Ошибка", f"Файл не найден:\n{file_path}")
+            return
+
+        # Проверяем содержимое архива
+        try:
+            with tarfile.open(file_path, 'r:gz') as tar:
+                members = tar.getnames()
+                # Ищем файл с нужным именем (может быть в корне или в подпапке)
+                found = False
+                for member in members:
+                    # Берём только имя файла без пути
+                    basename = os.path.basename(member)
+                    if basename == PANEL_CONFIG_FILENAME:
+                        found = True
+                        break
+
+                if not found:
+                    QMessageBox.critical(
+                        self, "Ошибка",
+                        f"В архиве не найден файл {PANEL_CONFIG_FILENAME}.\n"
+                        "Это не архив настроек панели."
+                    )
+                    return
+
+                # Распаковываем в ~/.config/
+                target_dir = os.path.expanduser('~/.config')
+                tar.extractall(path=target_dir, filter='data')
+        except tarfile.TarError as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось прочитать архив:\n{e}")
+            return
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось распаковать архив:\n{e}")
+            return
+
+        self.restart_plasmashell()
+        QMessageBox.information(
+            self, "Готово",
+            "Настройки панели загружены.\n"
+            "Панель перезапущена."
+        )
+
+    def on_reset_panel_default(self):
+        """Возвращает расположение виджетов по умолчанию"""
+        reply = QMessageBox.question(
+            self,
+            "Подтверждение",
+            "Добавленные вручную виджеты будут удалены.\n\n"
+            "Продолжить?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        target_file = os.path.expanduser(f'~/.config/{PANEL_CONFIG_FILENAME}')
+
+        try:
+            if os.path.exists(target_file):
+                os.remove(target_file)
+            self.restart_plasmashell()
+            QMessageBox.information(
+                self, "Готово",
+                "Расположение виджетов возвращено к заводским настройкам.\n"
+                "Панель перезапущена."
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сбросить настройки:\n{e}")
 
     def create_fixes_page(self):
         cards = []
