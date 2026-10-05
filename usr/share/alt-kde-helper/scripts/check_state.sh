@@ -1,224 +1,175 @@
 #!/bin/bash
-
 # check_state.sh - проверка реального состояния системы и установка флагов
-
 STATE_DIR="$HOME/.config/alt-kde-helper/state.d"
 mkdir -p "$STATE_DIR"
-
 # Очистка всех старых флагов
 rm -f "$STATE_DIR"/*
-
 # ============================================================
 # 1. Зеркала репозитория
 # ============================================================
-
 # Определяем текущее зеркало через apt-repo (без sudo)
 CURRENT_REPO=$(apt-repo 2>/dev/null | head -1 | awk '{print $3}')
-
 if echo "$CURRENT_REPO" | grep -qi "yandex"; then
-    # Зеркало Yandex
-    touch "$STATE_DIR/03_repo_yandex_action.sh"
+# Зеркало Yandex
+touch "$STATE_DIR/03_repo_yandex_action.sh"
 elif echo "$CURRENT_REPO" | grep -qi "ftp.altlinux.org"; then
-    # Репозиторий по умолчанию (ftp.altlinux.org)
-    touch "$STATE_DIR/04_repo_p11_action.sh"
+# Репозиторий по умолчанию (ftp.altlinux.org)
+touch "$STATE_DIR/04_repo_p11_action.sh"
 else
-    # Другое зеркало (скорее всего, самое быстрое)
-    touch "$STATE_DIR/02_repo_fast_mirror_action.sh"
+# Другое зеркало (скорее всего, самое быстрое)
+touch "$STATE_DIR/02_repo_fast_mirror_action.sh"
 fi
-
 # ============================================================
 # 2. Установка eepm (06_install_eepm_action.sh)
 # ============================================================
-
 if rpm -q eepm epmgpi eepm-play-gui &>/dev/null; then
-    touch "$STATE_DIR/06_install_eepm_action.sh"
+touch "$STATE_DIR/06_install_eepm_action.sh"
 fi
-
 # ============================================================
 # 3. Добавление пользователя в группы (08_add_groups_action.sh)
 # ============================================================
-
 USER_NAME="$USER"
-
 # Проверяем группы dialout и lp
 IN_DIALOUT=$(groups "$USER_NAME" | grep -q "dialout" && echo "yes" || echo "no")
 IN_LP=$(groups "$USER_NAME" | grep -q "lp" && echo "yes" || echo "no")
-
 # Проверяем наличие правила USBasp
 USBASP_RULE="/etc/udev/rules.d/99-usbasp.rules"
 USBASP_OK=0
 if [ -f "$USBASP_RULE" ]; then
-    USBASP_OK=1
+USBASP_OK=1
 fi
-
 if [ "$IN_DIALOUT" = "yes" ] && [ "$IN_LP" = "yes" ] && [ "$USBASP_OK" -eq 1 ]; then
-    # Проверяем группу adbusers (только если существует)
-    if getent group adbusers >/dev/null 2>&1; then
-        # Группа существует — проверяем, входит ли пользователь
-        if groups "$USER_NAME" | grep -q "adbusers"; then
-            touch "$STATE_DIR/08_add_groups_action.sh"
-        fi
-    else
-        # Группы нет — ставим флаг
-        touch "$STATE_DIR/08_add_groups_action.sh"
-    fi
+# Проверяем группу adbusers (только если существует)
+if getent group adbusers >/dev/null 2>&1; then
+# Группа существует — проверяем, входит ли пользователь
+if groups "$USER_NAME" | grep -q "adbusers"; then
+touch "$STATE_DIR/08_add_groups_action.sh"
 fi
-
+else
+# Группы нет — ставим флаг
+touch "$STATE_DIR/08_add_groups_action.sh"
+fi
+fi
 # ============================================================
 # 4. Установка flatpak (10_install_flatpak_action.sh)
 # ============================================================
-
 if rpm -q flatpak flatpak-repo-flathub firsttime-flatpak-mask-openh264 flatpak-kcm plasma-discover-flatpak &>/dev/null; then
-    touch "$STATE_DIR/10_install_flatpak_action.sh"
+touch "$STATE_DIR/10_install_flatpak_action.sh"
 fi
-
 # ============================================================
 # 5. Доступ flatpak к домашнему каталогу (11_flatpak_home_access_action.sh)
 # ============================================================
-
 if command -v flatpak &> /dev/null; then
-    OVERRIDES=$(flatpak override --user --show 2>/dev/null)
-    if echo "$OVERRIDES" | grep -qE "filesystems=home(:ro)?"; then
-        touch "$STATE_DIR/11_flatpak_home_access_action.sh"
-    fi
+OVERRIDES=$(flatpak override --user --show 2>/dev/null)
+if echo "$OVERRIDES" | grep -qE "filesystems=home(:ro)?"; then
+touch "$STATE_DIR/11_flatpak_home_access_action.sh"
 fi
-
+fi
 # ============================================================
 # 6. Исправление индикатора копирования (12_fix_copy_indicator_action.sh)
 # ============================================================
-
 if [ -f "/etc/sysctl.d/90-dirty.conf" ]; then
-    touch "$STATE_DIR/12_fix_copy_indicator_action.sh"
+touch "$STATE_DIR/12_fix_copy_indicator_action.sh"
 fi
-
 # ============================================================
 # 7. Размер шрифта 10 (13_increase_fonts_action.sh)
 # ============================================================
-
 FONT_SIZE=$(kreadconfig6 --file kdeglobals --group General --key font 2>/dev/null | cut -d',' -f2)
 if [ "$FONT_SIZE" = "10" ]; then
-    touch "$STATE_DIR/13_increase_fonts_action.sh"
+touch "$STATE_DIR/13_increase_fonts_action.sh"
 fi
-
 # ============================================================
 # 8. Миниатюры для 3D-файлов (14_thumbnails_3d_action.sh)
 # ============================================================
-
 if rpm -q f3d &>/dev/null && [ -f "/usr/local/bin/freecad-thumbnailer" ]; then
-    touch "$STATE_DIR/14_thumbnails_3d_action.sh"
+touch "$STATE_DIR/14_thumbnails_3d_action.sh"
 fi
-
 # ============================================================
 # 9. Миниатюры для DWG файлов (15_thumbnails_dwg_action.sh)
 # ============================================================
-
 if [ -f "/usr/local/bin/dwg-thumbnail.sh" ] && [ -f "/usr/share/thumbnailers/dwg.thumbnailer" ]; then
-    touch "$STATE_DIR/15_thumbnails_dwg_action.sh"
+touch "$STATE_DIR/15_thumbnails_dwg_action.sh"
 fi
-
 # ============================================================
 # 10. 3D-ускорение для Google Chrome (16_flatpak_chrome_3d_action.sh)
 # ============================================================
-
 OVERRIDES=$(flatpak override --user --show com.google.Chrome 2>/dev/null)
 if echo "$OVERRIDES" | grep -qE "socket=x11|socket=wayland|devices=dri"; then
-    touch "$STATE_DIR/16_flatpak_chrome_3d_action.sh"
+touch "$STATE_DIR/16_flatpak_chrome_3d_action.sh"
 fi
-
 # ============================================================
 # 11. Разрешение загрузки тем и виджетов из сети (17_enable_ghns_action.sh)
 # ============================================================
-
 if grep -q "ghns=true" /etc/kf5/xdg/kdeglobals 2>/dev/null && \
-   grep -q "ghns=true" /etc/xdg/kdeglobals 2>/dev/null; then
-    touch "$STATE_DIR/17_enable_ghns_action.sh"
+grep -q "ghns=true" /etc/xdg/kdeglobals 2>/dev/null; then
+touch "$STATE_DIR/17_enable_ghns_action.sh"
 fi
-
 # ============================================================
 # 12. Установка значков papirus (18_install_papirus_icons_action.sh)
 # ============================================================
-
 if rpm -q papirus-remix-icon-theme &>/dev/null; then
-    touch "$STATE_DIR/18_install_papirus_icons_action.sh"
+touch "$STATE_DIR/18_install_papirus_icons_action.sh"
 fi
-
 # ============================================================
 # 13. Установка stplr (20_install_stplr_action.sh)
 # ============================================================
-
 if rpm -q stplr stplr-repo-aides plasma-discover-stplr &>/dev/null; then
-    touch "$STATE_DIR/20_install_stplr_action.sh"
+touch "$STATE_DIR/20_install_stplr_action.sh"
 fi
-
 # ============================================================
 # 14. Установка кодека openh264 для Flatpak (21_install_openh264_action.sh)
 # ============================================================
-
 if flatpak list | grep -q "org.freedesktop.Platform.openh264"; then
-    touch "$STATE_DIR/21_install_openh264_action.sh"
+touch "$STATE_DIR/21_install_openh264_action.sh"
 fi
-
 # ============================================================
 # 17. Включение локальной сети Samba (22_enable_samba_action.sh)
 # ============================================================
-
 if systemctl is-enabled --quiet smb 2>/dev/null && systemctl is-active --quiet smb 2>/dev/null; then
-    touch "$STATE_DIR/22_enable_samba_action.sh"
+touch "$STATE_DIR/22_enable_samba_action.sh"
 fi
-
 # ============================================================
 # 18. Установка VirtualBox (24_install_virtualbox_action.sh)
 # ============================================================
-
 if command -v vboxmanage &>/dev/null; then
-    # Получаем версию VirtualBox
-    VB_VERSION=$(vboxmanage --version 2>/dev/null | cut -d'r' -f1)
-    if [ -z "$VB_VERSION" ]; then
-        VB_VERSION=$(rpm -q virtualbox --queryformat "%{VERSION}" 2>/dev/null | cut -d'-' -f1)
-    fi
-
-    if [ -n "$VB_VERSION" ]; then
-        # Проверяем Extension Pack
-        EXT_PACK_OK=0
-        if vboxmanage list extpacks 2>/dev/null | grep -q "Oracle VirtualBox Extension Pack"; then
-            EXT_PACK_OK=1
-        fi
-
-        # Проверяем модуль для текущего flavour ядра
-        FLAVOUR=$(uname -r | cut -d '.' -f1,2)
-        MODULE_PKG="kernel-modules-virtualbox-$FLAVOUR"
-        MODULE_VERSION=$(rpm -q "$MODULE_PKG" --queryformat "%{VERSION}" 2>/dev/null | cut -d'-' -f1)
-
-        # Сравниваем: Extension Pack установлен И версия модуля совпадает с версией VirtualBox
-        if [ "$EXT_PACK_OK" -eq 1 ] && [ -n "$MODULE_VERSION" ] && [ "$MODULE_VERSION" = "$VB_VERSION" ]; then
-            touch "$STATE_DIR/24_install_virtualbox_action.sh"
-        fi
-    fi
+# Получаем версию VirtualBox
+VB_VERSION=$(vboxmanage --version 2>/dev/null | cut -d'r' -f1)
+if [ -z "$VB_VERSION" ]; then
+VB_VERSION=$(rpm -q virtualbox --queryformat "%{VERSION}" 2>/dev/null | cut -d'-' -f1)
 fi
-
-
+if [ -n "$VB_VERSION" ]; then
+# Проверяем Extension Pack
+EXT_PACK_OK=0
+if vboxmanage list extpacks 2>/dev/null | grep -q "Oracle VirtualBox Extension Pack"; then
+EXT_PACK_OK=1
+fi
+# Проверяем модуль для текущего flavour ядра
+FLAVOUR=$(uname -r | cut -d '.' -f1,2)
+MODULE_PKG="kernel-modules-virtualbox-$FLAVOUR"
+MODULE_VERSION=$(rpm -q "$MODULE_PKG" --queryformat "%{VERSION}" 2>/dev/null | cut -d'-' -f1)
+# Сравниваем: Extension Pack установлен И версия модуля совпадает с версией VirtualBox
+if [ "$EXT_PACK_OK" -eq 1 ] && [ -n "$MODULE_VERSION" ] && [ "$MODULE_VERSION" = "$VB_VERSION" ]; then
+touch "$STATE_DIR/24_install_virtualbox_action.sh"
+fi
+fi
+fi
 # ============================================================
 # 19. Создание профиля Konsole (25_create_console_profile.sh)
 # ============================================================
-
 KONSOLE_PROFILE_FILE="$HOME/.local/share/konsole/Белый_текст.profile"
-KONSOLERC="$HOME/.config/konsolerc"
-PROFILE_NAME_FOR_CONFIG="Белый_текст.profile"
-PROFILE_ACTIVE=0
-
-# Проверяем, существует ли файл профиля
 if [ -f "$KONSOLE_PROFILE_FILE" ]; then
-    # Проверяем, установлен ли он как профиль по умолчанию
-    if [ -f "$KONSOLERC" ] && grep -q "^DefaultProfile=$PROFILE_NAME_FOR_CONFIG" "$KONSOLERC"; then
-        PROFILE_ACTIVE=1
-    else
-        # Если не установлен как основной, проверяем через поиск в konsolerc
-        if [ -f "$KONSOLERC" ] && grep -q "DefaultProfile.*$PROFILE_NAME_FOR_CONFIG" "$KONSOLERC"; then
-            PROFILE_ACTIVE=1
-        fi
-    fi
-fi
-
-if [ "$PROFILE_ACTIVE" -eq 1 ]; then
     touch "$STATE_DIR/25_create_console_profile.sh"
+fi
+# ============================================================
+# 20. Зеркало Flathub
+# ============================================================
+FLATHUB_URL=$(flatpak remotes --show-details 2>/dev/null | awk '$1=="flathub" {print $3}')
+# Убираем слэш в конце для корректного сравнения
+FLATHUB_URL="${FLATHUB_URL%/}"
+if [ "$FLATHUB_URL" = "https://mirrors.ustc.edu.cn/flathub" ]; then
+touch "$STATE_DIR/27_flathub-ustc.sh"
+elif [ "$FLATHUB_URL" = "https://flathub.alt-gnome.ru/repo" ]; then
+touch "$STATE_DIR/26_flathub-alt.sh"
+elif [ "$FLATHUB_URL" = "https://dl.flathub.org/repo" ]; then
+touch "$STATE_DIR/28_flathub-default.sh"
 fi

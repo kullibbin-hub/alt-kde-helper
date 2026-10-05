@@ -1,5 +1,4 @@
 # gui.py - графический интерфейс Alt KDE Helper
-
 import sys
 import os
 import shutil
@@ -13,13 +12,11 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent, QSize
 from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction
-
 from config import (
     get_stylesheet, get_scripts_dir, get_state_dir, get_actions_dir,
     clear_actions_dir, get_help_path, get_version,
     load_theme_setting, save_theme_setting, is_dark_theme
 )
-
 
 def get_current_version():
     """Возвращает текущую версию программы из version.txt"""
@@ -34,11 +31,9 @@ def get_current_version():
     # fallback
     return '1.2.2'
 
-
 def get_config_dir():
     """Возвращает путь к папке конфигурации программы"""
     return os.path.expanduser('~/.config/alt-kde-helper')
-
 
 def get_packages_file_path():
     """Возвращает путь к файлу списка пакетов для текущей версии"""
@@ -46,11 +41,9 @@ def get_packages_file_path():
     version = get_current_version()
     return os.path.join(config_dir, f'user_packages_{version}.txt')
 
-
 def get_default_packages_path():
     """Возвращает путь к системному файлу со списком пакетов по умолчанию"""
     return '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
-
 
 def ensure_packages_file(parent=None):
     """
@@ -60,8 +53,8 @@ def ensure_packages_file(parent=None):
     """
     config_dir = get_config_dir()
     os.makedirs(config_dir, exist_ok=True)
-
     current_version = get_current_version()
+
     target_file = get_packages_file_path()
     default_file = get_default_packages_path()
 
@@ -71,6 +64,7 @@ def ensure_packages_file(parent=None):
 
     # Ищем старые файлы с другими версиями
     old_files = glob.glob(os.path.join(config_dir, 'user_packages_*.txt'))
+
     # Отфильтровываем .old.txt файлы
     old_files = [f for f in old_files if not f.endswith('.old.txt')]
 
@@ -84,6 +78,7 @@ def ensure_packages_file(parent=None):
         return target_file
 
     # Есть старые файлы — значит, это обновление программы
+
     # Сортируем по имени (версия в имени) и берём самый новый (последний)
     old_files.sort()
     latest_old_file = old_files[-1]
@@ -99,27 +94,23 @@ def ensure_packages_file(parent=None):
     title = QLabel(f"<b>Обнаружена новая версия программы ({current_version})</b>")
     title.setWordWrap(True)
     layout.addWidget(title)
-
     layout.addSpacing(10)
 
     # Пояснение
     info = QLabel("В новой версии изменён и дополнен список рекомендуемых пакетов.")
     info.setWordWrap(True)
     layout.addWidget(info)
-
     layout.addSpacing(15)
 
     # Радиокнопки
     keep_radio = QRadioButton("Оставить мой текущий список")
     keep_radio.setToolTip("Ваши личные изменения сохранятся, новые пакеты из обновления добавлены не будут")
-
     replace_radio = QRadioButton("Заменить список новым (рекомендуется)")
     replace_radio.setToolTip("Вы получите актуальный список пакетов для установки")
     replace_radio.setChecked(True)  # по умолчанию выбран
 
     layout.addWidget(keep_radio)
     layout.addWidget(replace_radio)
-
     layout.addSpacing(15)
 
     # Путь к папке со старыми файлами (кликабельная ссылка)
@@ -130,7 +121,6 @@ def ensure_packages_file(parent=None):
     folder_link.setWordWrap(True)
     folder_link.setOpenExternalLinks(True)
     layout.addWidget(folder_link)
-
     layout.addSpacing(20)
 
     # Кнопки
@@ -171,7 +161,6 @@ def ensure_packages_file(parent=None):
 
     return target_file
 
-
 class ActionWorker(QThread):
     """Поток для выполнения действий в терминале"""
     finished = pyqtSignal()
@@ -198,6 +187,7 @@ class ActionWorker(QThread):
 
         import time
         time.sleep(0.5)
+
         try:
             result = subprocess.run(['pgrep', '-f', f'konsole.*Применение изменений'], capture_output=True, text=True)
             if result.returncode == 0 and result.stdout.strip():
@@ -217,7 +207,6 @@ class ActionWorker(QThread):
                 pass
         elif self.process and self.process.poll() is None:
             self.process.terminate()
-
 
 class ActionCard(QFrame):
     """Карточка с двумя чекбоксами для действия с откатом"""
@@ -283,6 +272,7 @@ class ActionCard(QFrame):
         else:
             self.desc_label.setProperty("class", "Description")
             self.setProperty("class", "ActionCard")
+
         self.style().unpolish(self)
         self.style().polish(self)
         self.desc_label.style().unpolish(self.desc_label)
@@ -290,12 +280,10 @@ class ActionCard(QFrame):
 
     def on_install_changed(self, state):
         is_checked = (state == Qt.CheckState.Checked.value)
-
         if is_checked:
             self.rollback_cb.blockSignals(True)
             self.rollback_cb.setChecked(False)
             self.rollback_cb.blockSignals(False)
-
             self.update_style('orange')
         else:
             state_dir = get_state_dir()
@@ -307,12 +295,10 @@ class ActionCard(QFrame):
 
     def on_rollback_changed(self, state):
         is_checked = (state == Qt.CheckState.Checked.value)
-
         if is_checked:
             self.install_cb.blockSignals(True)
             self.install_cb.setChecked(False)
             self.install_cb.blockSignals(False)
-
             self.update_style('orange')
         else:
             state_dir = get_state_dir()
@@ -321,7 +307,6 @@ class ActionCard(QFrame):
                 self.update_style('green')
             else:
                 self.update_style('normal')
-
 
 class SimpleActionCard(QFrame):
     """Простая карточка с одним чекбоксом для действия без отката"""
@@ -379,6 +364,7 @@ class SimpleActionCard(QFrame):
         else:
             self.desc_label.setProperty("class", "Description")
             self.setProperty("class", "SimpleActionCard")
+
         self.style().unpolish(self)
         self.style().polish(self)
         self.desc_label.style().unpolish(self.desc_label)
@@ -386,7 +372,6 @@ class SimpleActionCard(QFrame):
 
     def on_install_changed(self, state):
         is_checked = (state == Qt.CheckState.Checked.value)
-
         if is_checked:
             self.update_style('orange')
         else:
@@ -397,7 +382,6 @@ class SimpleActionCard(QFrame):
             else:
                 self.update_style('normal')
 
-
 class MirrorCard(QWidget):
     """Карточка для выбора зеркала (радиокнопки)"""
     def __init__(self, parent=None):
@@ -407,12 +391,14 @@ class MirrorCard(QWidget):
             ("03_repo_yandex_action.sh", "Зеркало на Yandex"),
             ("04_repo_p11_action.sh", "Репозиторий по умолчанию"),
         ]
+
         self.radio_buttons = {}
         self.button_group = QButtonGroup()
         self.button_group.buttonToggled.connect(self.on_radio_toggled)
 
         self.frame = QFrame()
         self.frame.setProperty("class", "MirrorCard")
+
         frame_layout = QVBoxLayout()
         frame_layout.setContentsMargins(12, 4, 12, 4)
 
@@ -431,6 +417,7 @@ class MirrorCard(QWidget):
         none_radio.setCursor(Qt.CursorShape.PointingHandCursor)
         none_layout.addWidget(none_radio)
         none_widget.setLayout(none_layout)
+
         frame_layout.addWidget(none_widget)
 
         self.none_radio = none_radio
@@ -441,16 +428,14 @@ class MirrorCard(QWidget):
             widget = QWidget()
             h_layout = QHBoxLayout()
             h_layout.setContentsMargins(0, 2, 0, 2)
-
             desc_label = QLabel(description)
             desc_label.setWordWrap(True)
             h_layout.addWidget(desc_label, 1)
-
             radio = QRadioButton()
             radio.setCursor(Qt.CursorShape.PointingHandCursor)
             h_layout.addWidget(radio)
-
             widget.setLayout(h_layout)
+
             frame_layout.addWidget(widget)
 
             self.radio_buttons[script_name] = (radio, desc_label)
@@ -481,6 +466,7 @@ class MirrorCard(QWidget):
             desc_label.setProperty("class", "Description")
             desc_label.style().unpolish(desc_label)
             desc_label.style().polish(desc_label)
+
         self.none_label.setProperty("class", "Description")
         self.none_label.style().unpolish(self.none_label)
         self.none_label.style().polish(self.none_label)
@@ -506,8 +492,8 @@ class MirrorCard(QWidget):
             return
 
         mirror_scripts = list(self.radio_buttons.keys())
-
         selected_script = None
+
         for script_name, (r, desc_label) in self.radio_buttons.items():
             if r == radio:
                 selected_script = script_name
@@ -530,6 +516,7 @@ class MirrorCard(QWidget):
             desc_label.setProperty("class", "DescriptionOrange")
             desc_label.style().unpolish(desc_label)
             desc_label.style().polish(desc_label)
+
             self.none_label.setProperty("class", "Description")
         else:
             # Выбрано "Не менять"
@@ -538,6 +525,7 @@ class MirrorCard(QWidget):
                 self.none_label.setProperty("class", "Description")
             else:
                 self.none_label.setProperty("class", "DescriptionGreen")
+
             self.none_label.style().unpolish(self.none_label)
             self.none_label.style().polish(self.none_label)
 
@@ -567,11 +555,175 @@ class MirrorCard(QWidget):
         """Возвращает имя выбранного скрипта зеркала или None"""
         if self.none_radio.isChecked():
             return None
+
         for script_name, (radio, desc_label) in self.radio_buttons.items():
             if radio.isChecked():
                 return script_name
+
         return None
 
+class FlathubMirrorCard(QWidget):
+    """Карточка для выбора зеркала Flathub (радиокнопки)"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.mirrors = [
+            ("26_flathub-alt.sh", "Зеркало ALT Gnome (Россия)"),
+            ("27_flathub-ustc.sh", "Зеркало USTC (Китай)"),
+            ("28_flathub-default.sh", "Стандартное зеркало (dl.flathub.org)"),
+        ]
+
+        self.radio_buttons = {}
+        self.button_group = QButtonGroup()
+        self.button_group.buttonToggled.connect(self.on_radio_toggled)
+
+        self.frame = QFrame()
+        self.frame.setProperty("class", "MirrorCard")
+
+        frame_layout = QVBoxLayout()
+        frame_layout.setContentsMargins(12, 4, 12, 4)
+
+        title = QLabel("Выбор зеркала Flathub")
+        title.setStyleSheet("font-weight: bold; margin-bottom: 5px;")
+        frame_layout.addWidget(title)
+
+        # Радиокнопка "Не менять"
+        none_widget = QWidget()
+        none_layout = QHBoxLayout()
+        none_layout.setContentsMargins(0, 2, 0, 2)
+        none_label = QLabel("Не менять текущее зеркало")
+        none_label.setWordWrap(True)
+        none_layout.addWidget(none_label, 1)
+        none_radio = QRadioButton()
+        none_radio.setCursor(Qt.CursorShape.PointingHandCursor)
+        none_layout.addWidget(none_radio)
+        none_widget.setLayout(none_layout)
+
+        frame_layout.addWidget(none_widget)
+
+        self.none_radio = none_radio
+        self.none_label = none_label
+        self.button_group.addButton(none_radio)
+
+        for script_name, description in self.mirrors:
+            widget = QWidget()
+            h_layout = QHBoxLayout()
+            h_layout.setContentsMargins(0, 2, 0, 2)
+            desc_label = QLabel(description)
+            desc_label.setWordWrap(True)
+            h_layout.addWidget(desc_label, 1)
+            radio = QRadioButton()
+            radio.setCursor(Qt.CursorShape.PointingHandCursor)
+            h_layout.addWidget(radio)
+            widget.setLayout(h_layout)
+
+            frame_layout.addWidget(widget)
+
+            self.radio_buttons[script_name] = (radio, desc_label)
+            self.button_group.addButton(radio)
+
+        frame_layout.addStretch()
+        self.frame.setLayout(frame_layout)
+
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(self.frame)
+        self.setLayout(main_layout)
+
+        self.load_state()
+
+    def load_state(self):
+        state_dir = get_state_dir()
+        active_script = None
+
+        for script_name in self.radio_buttons.keys():
+            state_file = os.path.join(state_dir, script_name)
+            if os.path.exists(state_file):
+                active_script = script_name
+                break
+
+        # Сбрасываем стили описаний
+        for script_name, (radio, desc_label) in self.radio_buttons.items():
+            desc_label.setProperty("class", "Description")
+            desc_label.style().unpolish(desc_label)
+            desc_label.style().polish(desc_label)
+
+        self.none_label.setProperty("class", "Description")
+        self.none_label.style().unpolish(self.none_label)
+        self.none_label.style().polish(self.none_label)
+
+        # ВСЕГДА устанавливаем радиокнопку "Не менять"
+        self.none_radio.blockSignals(True)
+        self.none_radio.setChecked(True)
+        self.none_radio.blockSignals(False)
+
+        # Если есть активный флаг — подсвечиваем соответствующую карточку зелёным
+        if active_script:
+            radio, desc_label = self.radio_buttons[active_script]
+            desc_label.setProperty("class", "DescriptionGreen")
+            desc_label.style().unpolish(desc_label)
+            desc_label.style().polish(desc_label)
+        else:
+            self.none_label.setProperty("class", "DescriptionGreen")
+            self.none_label.style().unpolish(self.none_label)
+            self.none_label.style().polish(self.none_label)
+
+    def on_radio_toggled(self, radio, checked):
+        if not checked:
+            return
+
+        mirror_scripts = list(self.radio_buttons.keys())
+        selected_script = None
+
+        for script_name, (r, desc_label) in self.radio_buttons.items():
+            if r == radio:
+                selected_script = script_name
+                break
+
+        # Снимаем выделение со всех карточек
+        for script_name, (r, lbl) in self.radio_buttons.items():
+            if script_name != selected_script:
+                state_file = os.path.join(get_state_dir(), script_name)
+                if os.path.exists(state_file):
+                    lbl.setProperty("class", "DescriptionGreen")
+                else:
+                    lbl.setProperty("class", "Description")
+                lbl.style().unpolish(lbl)
+                lbl.style().polish(lbl)
+
+        if selected_script:
+            # Выделяем выбранный пункт оранжевым
+            _, desc_label = self.radio_buttons[selected_script]
+            desc_label.setProperty("class", "DescriptionOrange")
+            desc_label.style().unpolish(desc_label)
+            desc_label.style().polish(desc_label)
+
+            self.none_label.setProperty("class", "Description")
+        else:
+            # Выбрано "Не менять"
+            any_flag = any(os.path.exists(os.path.join(get_state_dir(), sn)) for sn in mirror_scripts)
+            if any_flag:
+                self.none_label.setProperty("class", "Description")
+            else:
+                self.none_label.setProperty("class", "DescriptionGreen")
+
+            self.none_label.style().unpolish(self.none_label)
+            self.none_label.style().polish(self.none_label)
+
+        # Обновляем стиль none_label
+        self.none_label.style().unpolish(self.none_label)
+        self.none_label.style().polish(self.none_label)
+
+    def get_selected_mirror_script(self):
+        """Возвращает имя выбранного скрипта зеркала или None"""
+        if self.none_radio.isChecked():
+            return None
+
+        for script_name, (radio, desc_label) in self.radio_buttons.items():
+            if radio.isChecked():
+                return script_name
+
+        return None
 
 class HelpDialog(QDialog):
     def __init__(self, parent=None):
@@ -611,7 +763,6 @@ class HelpDialog(QDialog):
 
         self.setLayout(layout)
 
-
 class CategoryPage(QWidget):
     def __init__(self, cards, parent=None):
         super().__init__(parent)
@@ -639,14 +790,13 @@ class CategoryPage(QWidget):
         self.worker = None
         self._closing = False
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
-        self.setMinimumSize(800, 620)
-        self.resize(800, 620)
+        self.setMinimumSize(800, 600)
+        self.resize(800, 650)
 
         clear_actions_dir()
 
@@ -661,10 +811,12 @@ class MainWindow(QMainWindow):
         left_panel = QWidget()
         left_panel.setFixedWidth(140)
         left_panel.setAutoFillBackground(True)
+
         from PyQt6.QtGui import QPalette
         pal = left_panel.palette()
         pal.setColor(QPalette.ColorRole.Window, pal.color(QPalette.ColorRole.Base))
         left_panel.setPalette(pal)
+
         left_panel_layout = QVBoxLayout()
         left_panel_layout.setContentsMargins(0, 0, 0, 0)
         left_panel_layout.setSpacing(5)
@@ -686,7 +838,6 @@ class MainWindow(QMainWindow):
                 border: 1px solid palette(mid);
             }
         """)
-
         self.menu_button.clicked.connect(self.show_menu)
 
         # Контейнер для кнопки меню и текста
@@ -696,10 +847,10 @@ class MainWindow(QMainWindow):
         palette = menu_container.palette()
         palette.setColor(menu_container.backgroundRole(), palette.color(QPalette.ColorRole.Window))
         menu_container.setPalette(palette)
+
         menu_layout = QHBoxLayout()
         menu_layout.setContentsMargins(2, 2, 2, 2)
         menu_layout.setSpacing(5)
-
         menu_layout.addWidget(self.menu_button)
 
         menu_label = QLabel("Меню")
@@ -711,7 +862,6 @@ class MainWindow(QMainWindow):
         left_panel_layout.addWidget(menu_container)
 
         # Горизонтальная линия-разделитель под меню
-
         menu_line = QFrame()
         menu_line.setFrameShape(QFrame.Shape.HLine)
         menu_line.setFrameShadow(QFrame.Shadow.Sunken)
@@ -738,6 +888,7 @@ class MainWindow(QMainWindow):
         left_panel_layout.addWidget(self.tab_btn_fixes)
 
         left_panel_layout.addStretch()
+
         left_panel.setLayout(left_panel_layout)
 
         # Правая часть (контент + кнопки внизу)
@@ -756,6 +907,7 @@ class MainWindow(QMainWindow):
 
         self.stack_layout.addWidget(self.maintenance_page)
         self.stack_layout.addWidget(self.fixes_page)
+
         self.fixes_page.setVisible(False)
 
         self.stack.setLayout(self.stack_layout)
@@ -769,12 +921,10 @@ class MainWindow(QMainWindow):
         line_h.setFrameShape(QFrame.Shape.HLine)
         line_h.setFrameShadow(QFrame.Shadow.Sunken)
         line_h.setFixedHeight(1)
-
         right_layout.addWidget(line_h)
 
         bottom_layout.setContentsMargins(0, 10, 10, 10)
         bottom_layout.setSpacing(10)
-
         bottom_layout.addStretch()
 
         self.recommended_btn = QPushButton("Выбрать рекомендованные настройки")
@@ -847,7 +997,6 @@ class MainWindow(QMainWindow):
         else:
             QApplication.instance().setStyleSheet(get_stylesheet())
 
-
     def event(self, event):
         if event.type() == QEvent.Type.ApplicationPaletteChange:
             # Тема оформления изменилась — обновляем стили с учётом сохранённой настройки
@@ -877,9 +1026,11 @@ class MainWindow(QMainWindow):
         help_action = QAction("Справка", self)
         help_action.triggered.connect(self.show_help)
         menu.addAction(help_action)
+
         about_action = QAction("О программе", self)
         about_action.triggered.connect(self.show_about)
         menu.addAction(about_action)
+
         check_update_action = QAction("Проверить обновление", self)
         check_update_action.triggered.connect(self.check_for_updates)
         menu.addAction(check_update_action)
@@ -929,11 +1080,13 @@ class MainWindow(QMainWindow):
             self.current_worker.terminate_terminal()
             self.current_worker.quit()
             self.current_worker.wait(2000)
+
         event.accept()
 
     def switch_tab(self, index):
         self.maintenance_page.setVisible(index == 0)
         self.fixes_page.setVisible(index == 1)
+
         self.tab_btn_maintenance.setChecked(index == 0)
         self.tab_btn_fixes.setChecked(index == 1)
 
@@ -942,6 +1095,7 @@ class MainWindow(QMainWindow):
 
         self.tab_btn_maintenance.style().unpolish(self.tab_btn_maintenance)
         self.tab_btn_maintenance.style().polish(self.tab_btn_maintenance)
+
         self.tab_btn_fixes.style().unpolish(self.tab_btn_fixes)
         self.tab_btn_fixes.style().polish(self.tab_btn_fixes)
 
@@ -959,6 +1113,12 @@ class MainWindow(QMainWindow):
                 return card
         return None
 
+    def get_flathub_mirror_card(self):
+        for card in self.get_all_cards():
+            if isinstance(card, FlathubMirrorCard):
+                return card
+        return None
+
     def toggle_recommended(self):
         cards = self.get_all_cards()
 
@@ -967,7 +1127,6 @@ class MainWindow(QMainWindow):
                 if hasattr(card, 'install_cb') and hasattr(card, 'script_name'):
                     if card.script_name in self.recommended_scripts:
                         card.install_cb.setChecked(True)
-
             self.recommended_state = True
         else:
             for card in cards:
@@ -1053,13 +1212,30 @@ class MainWindow(QMainWindow):
                 if os.path.exists(script_src) and not os.path.exists(action_path):
                     shutil.copy2(script_src, action_path)
 
+        # Обработка выбора зеркала Flathub
+        flathub_mirror_card = None
+        for card in self.maintenance_page.cards:
+            if isinstance(card, FlathubMirrorCard):
+                flathub_mirror_card = card
+                break
+
+        if flathub_mirror_card:
+            selected_script = flathub_mirror_card.get_selected_mirror_script()
+            if selected_script:
+                script_src = os.path.join(scripts_dir, selected_script)
+                action_path = os.path.join(actions_dir, selected_script)
+                if os.path.exists(script_src) and not os.path.exists(action_path):
+                    shutil.copy2(script_src, action_path)
+
         action_files = [f for f in os.listdir(actions_dir) if f.endswith('.sh') and f != '99_final.sh']
+
         if not action_files:
             QMessageBox.information(self, "Нет действий", "Нет действий для применения.")
             return
 
         final_script_src = os.path.join(scripts_dir, '99_final.sh')
         final_script_dst = os.path.join(actions_dir, '99_final.sh')
+
         if os.path.exists(final_script_src) and not os.path.exists(final_script_dst):
             shutil.copy2(final_script_src, final_script_dst)
 
@@ -1097,16 +1273,20 @@ class MainWindow(QMainWindow):
         msg_box.setWindowTitle("Не все действия выполнены")
         msg_box.setText(f"Остались невыполненные действия:\n\n{scripts_list}\n\nПродолжить выполнение или отменить?")
         msg_box.setInformativeText("При продолжении будет произведена повторная попытка выполнить оставшиеся действия.")
+
         continue_btn = msg_box.addButton("Продолжить", QMessageBox.ButtonRole.YesRole)
         cancel_btn = msg_box.addButton("Отменить", QMessageBox.ButtonRole.NoRole)
         msg_box.setDefaultButton(continue_btn)
+
         msg_box.exec()
 
         if msg_box.clickedButton() == continue_btn:
             final_script_src = os.path.join(scripts_dir, '99_final.sh')
             final_script_dst = os.path.join(actions_dir, '99_final.sh')
+
             if os.path.exists(final_script_src) and not os.path.exists(final_script_dst):
                 shutil.copy2(final_script_src, final_script_dst)
+
             self.current_worker = ActionWorker(actions_dir)
             self.current_worker.finished.connect(self.on_actions_finished)
             self.current_worker.start()
@@ -1145,6 +1325,15 @@ class MainWindow(QMainWindow):
             mirror_card.none_radio.blockSignals(False)
             if hasattr(mirror_card, 'load_state'):
                 mirror_card.load_state()
+
+        # Сбрасываем радиокнопки выбора зеркала Flathub на "Не менять"
+        flathub_mirror_card = self.get_flathub_mirror_card()
+        if flathub_mirror_card and hasattr(flathub_mirror_card, 'none_radio'):
+            flathub_mirror_card.none_radio.blockSignals(True)
+            flathub_mirror_card.none_radio.setChecked(True)
+            flathub_mirror_card.none_radio.blockSignals(False)
+            if hasattr(flathub_mirror_card, 'load_state'):
+                flathub_mirror_card.load_state()
 
         # Сбрасываем состояние рекомендованных кнопок
         self.recommended_state = False
@@ -1233,9 +1422,11 @@ class MainWindow(QMainWindow):
         msg.setWindowTitle("Доступно обновление")
         msg.setText(f"Доступна новая версия: {latest_version}\n\nВаша версия: {current_version}")
         msg.setInformativeText("Установить обновление?")
+
         install_btn = msg.addButton("Установить", QMessageBox.ButtonRole.AcceptRole)
         cancel_btn = msg.addButton("Отмена", QMessageBox.ButtonRole.RejectRole)
         msg.setDefaultButton(install_btn)
+
         msg.exec()
 
         if msg.clickedButton() != install_btn:
@@ -1248,6 +1439,7 @@ class MainWindow(QMainWindow):
 
         rpm_filename = f"alt-kde-helper-{latest_version}-alt1.noarch.rpm"
         rpm_path = os.path.join(download_dir, rpm_filename)
+
         rpm_url = f"https://github.com/kullibbin-hub/alt-kde-helper/releases/download/v{latest_version}/{rpm_filename}"
 
         # Команда для Konsole: скачивание и установка
@@ -1271,6 +1463,7 @@ class MainWindow(QMainWindow):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+
         process.wait()
 
         # Проверяем код возврата процесса (0 = успех)
@@ -1283,9 +1476,11 @@ class MainWindow(QMainWindow):
                 f"Обновление до версии {latest_version} установлено успешно!"
             )
             restart_msg.setInformativeText("Для применения изменений перезапустите программу.")
+
             restart_btn = restart_msg.addButton("Перезапустить", QMessageBox.ButtonRole.AcceptRole)
             restart_msg.addButton("Закрыть", QMessageBox.ButtonRole.RejectRole)
             restart_msg.setDefaultButton(restart_btn)
+
             restart_msg.exec()
 
             if restart_msg.clickedButton() == restart_btn:
@@ -1296,6 +1491,7 @@ class MainWindow(QMainWindow):
 
     def edit_packages_list(self):
         import subprocess
+
         packages_file = get_packages_file_path()
         config_dir = get_config_dir()
         os.makedirs(config_dir, exist_ok=True)
@@ -1335,14 +1531,12 @@ class MainWindow(QMainWindow):
         warning = QLabel("<b>Восстановление списка пакетов по умолчанию</b>")
         warning.setWordWrap(True)
         layout.addWidget(warning)
-
         layout.addSpacing(10)
 
         # Пояснение
         info = QLabel("Вы хотите заменить ваш текущий список пакетов на стандартный список по умолчанию (который идёт с программой).")
         info.setWordWrap(True)
         layout.addWidget(info)
-
         layout.addSpacing(15)
 
         # Информация о бэкапе (кликабельная ссылка)
@@ -1357,7 +1551,6 @@ class MainWindow(QMainWindow):
         backup_info.setWordWrap(True)
         backup_info.setOpenExternalLinks(True)
         layout.addWidget(backup_info)
-
         layout.addSpacing(20)
 
         # Кнопки
@@ -1386,6 +1579,7 @@ class MainWindow(QMainWindow):
             return
 
         # Выполняем восстановление
+
         # Если бэкап уже существует — удаляем его (держим только один последний)
         if os.path.exists(backup_file):
             os.remove(backup_file)
@@ -1414,7 +1608,6 @@ class MainWindow(QMainWindow):
         # ============================================================
         # Без отката (SimpleActionCard)
         # ============================================================
-
         codec_card = SimpleActionCard(
             "Установка кодека openh264 для Flatpak (без VPN)",
             "Устанавливает кодек openh264 для Flatpak через stplr, для этого VPN не нужен.",
@@ -1440,7 +1633,6 @@ class MainWindow(QMainWindow):
             "18_install_papirus_icons_action.sh"
         ))
 
-
         cards.append(SimpleActionCard(
             "Добавить себя в группы dialout, lp, adbusers + доступ к USBasp",
             "Добавляет текущего пользователя в группы \nдля доступа к USB и правила udev для USBasp устройств",
@@ -1456,7 +1648,6 @@ class MainWindow(QMainWindow):
         # ============================================================
         # С откатом (ActionCard)
         # ============================================================
-
         cards.append(ActionCard(
             "Установка virtualbox со всеми дополнениями",
             "Установка virtualbox со всеми дополнениями, отключение KVM.\nОткат удаляет virtualbox и возвращает KVM обратно.",
@@ -1552,6 +1743,7 @@ class MainWindow(QMainWindow):
         cards = []
 
         cards.append(MirrorCard())
+        cards.append(FlathubMirrorCard())
 
         cards.append(SimpleActionCard(
             "Установка рекомендованных пакетов",
@@ -1581,10 +1773,12 @@ class MainWindow(QMainWindow):
         title_widget = QWidget()
         title_layout = QHBoxLayout()
         title_layout.setContentsMargins(0, 10, 0, 5)
+
         title_label = QLabel("<b>Текущее обслуживание системы</b>")
         title_label.setStyleSheet("font-size: 14px; color: palette(text);")
         title_layout.addWidget(title_label)
         title_layout.addStretch()
+
         title_widget.setLayout(title_layout)
         cards.append(title_widget)
 
@@ -1602,7 +1796,6 @@ class MainWindow(QMainWindow):
 
         return CategoryPage(cards)
 
-
 def run():
     app = QApplication(sys.argv)
     # Применяем стили с учётом сохранённой настройки темы
@@ -1611,10 +1804,10 @@ def run():
         app.setStyleSheet(get_stylesheet(force_dark=saved))
     else:
         app.setStyleSheet(get_stylesheet())
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     run()
