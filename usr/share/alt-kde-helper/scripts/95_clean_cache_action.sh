@@ -40,9 +40,6 @@ echo -e "\033[1;33m→ Удаление неиспользуемых ранта�
 # Получаем список неиспользуемых рантаймов, исключая openh264
 flatpak uninstall --unused -y 2>/dev/null | grep -v "openh264" || true
 
-echo -e "\033[1;33m→ Удаление старых, неиспользуемых ядер...\033[0m"
-sudo remove-old-kernels -y 2>/dev/null
-
 echo -e "\033[1;33m→ Очистка временных файлов Audacity...\033[0m"
 sudo rm -rf /var/tmp/audacity-*
 
