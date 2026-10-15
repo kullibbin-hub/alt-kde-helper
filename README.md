@@ -1,6 +1,4 @@
 # Alt KDE Helper
-# Alt KDE Helper
-
 ![Downloads](https://img.shields.io/github/downloads/kullibbin-hub/alt-kde-helper/total)
 ![Latest release](https://img.shields.io/github/v/release/kullibbin-hub/alt-kde-helper)
 ![License](https://img.shields.io/github/license/kullibbin-hub/alt-kde-helper)
