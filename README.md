@@ -78,7 +78,7 @@ apt-get install /home/$(logname)/alt-kde-helper-х.х.х.noarch.rpm
 
 Добавьте репозиторий в свой список репозиториев:
 ```bash
-su-
+su -
 ```
 введите пароль, Enter
 ```bash
