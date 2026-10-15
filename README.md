@@ -4,6 +4,7 @@
 
 Программа предназначена для настройки и обслуживания операционных систем ALT Linux 11 с рабочим столом KDE6 — KWorkstation и особенно Starterkit, который можно одним кликом привести в полностью готовый для работы дистрибутив, оставаясь быстрым и лёгким, но полностью функциональным. Добавлена экспериментально поддержка Sisyphus, но без каких-либо гарантий, так как это тестовый, постоянно меняющийся репозиторий. Также заранее добавлена поддержка p12, так как на Сизифе сейчас все работает корректно.
 Форум для обсуждения: https://forum.altlinux.org/index.php?topic=49855.0
+
 Зеркало на altlinux.space: https://altlinux.space/kullibbin/alt-kde-helper/packages
 
 **Основные функции:**
@@ -41,11 +42,13 @@
 
 ## Установка. Сначала обновите систему!
 
-### Самый простой способ — через RPM-пакет
+### Установка через RPM-пакет
 
 Скачайте файл alt-kde-helper-х.х.х.noarch.rpm со страницы релизов:
-https://github.com/kullibbin-hub/alt-kde-helper/releases/
-х.х.х - подставьте версию, как в файле пакета
+
+https://github.com/kullibbin-hub/alt-kde-helper/releases/latest
+
+x.x.x - версия пакета.
 
 **Установка через Discover**
 
@@ -59,13 +62,33 @@ https://github.com/kullibbin-hub/alt-kde-helper/releases/
 
 1. Положите скачанный файл в вашу домашнюю папку /home/ваш_логин/
 2. Откройте терминал и выполните:
-
+```bash
    su -
-
+```
 3. Введите пароль root, затем выполните:
-
+```bash
 apt-get install /home/$(logname)/alt-kde-helper-х.х.х.noarch.rpm
+```
 х.х.х - подставьте версию, как в файле пакета
+
+
+### Установка из репозитория на altlinux.space (зеркало)
+
+
+
+Добавьте репозиторий в свой список репозиториев:
+```bash
+su-
+```
+введите пароль, Enter
+```bash
+apt-repo add rpm https://altlinux.space/api/packages/kullibbin/alt/alt.repo $(uname -m) classic
+```
+Чтобы установить пакет, выполните следующие команды:
+```bash
+apt-get update
+apt-get install alt-kde-helper
+```
 
 ### Установка из исходников
 
