@@ -872,7 +872,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
         self.setMinimumSize(800, 600)
-        self.resize(800, 650)
+        self.resize(800, 680)
 
         clear_actions_dir()
 
@@ -1898,6 +1898,19 @@ class MainWindow(QMainWindow):
             "Создать профиль Konsole с ярким белым текстом",
             "Создаёт профиль Konsole «Белый_текст» для лучшей читаемости.\nПосле применения перезапустите Konsole или выберите профиль вручную.",
             "25_create_console_profile.sh"
+        ))
+
+        # ============================================================
+        # С откатом (ActionCard)
+        # ============================================================
+        cards.append(ActionCard(
+            "Действия в контекстном меню Dolphin",
+            "Добавляет в контекстное меню Dolphin два пункта:\n"
+            "«Открыть как текст» — открывает файл в редакторе по умолчанию,\n"
+            "«Сделать исполняемым» — выставляет права на выполнение (chmod +x).\n\n"
+            "Пункты выводятся в корень контекстного меню.",
+            "29_add_actions_dolphin_action.sh",
+            "29_add_actions_dolphin_rollback.sh"
         ))
 
         # ============================================================

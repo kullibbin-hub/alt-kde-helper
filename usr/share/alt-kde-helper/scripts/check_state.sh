@@ -173,3 +173,9 @@ touch "$STATE_DIR/26_flathub-alt.sh"
 elif [ "$FLATHUB_URL" = "https://dl.flathub.org/repo" ]; then
 touch "$STATE_DIR/28_flathub-default.sh"
 fi
+# ============================================================
+# Действия в контекстном меню Dolphin (29_add_actions_dolphin_action.sh)
+# ============================================================
+if [ -f "$HOME/.local/share/kio/servicemenus/alt-kde-helper-actions.desktop" ]; then
+    touch "$STATE_DIR/29_add_actions_dolphin_action.sh"
+fi
