@@ -1,5 +1,9 @@
 # Alt KDE Helper
+# Alt KDE Helper
 
+![Downloads](https://img.shields.io/github/downloads/kullibbin-hub/alt-kde-helper/total)
+![Latest release](https://img.shields.io/github/v/release/kullibbin-hub/alt-kde-helper)
+![License](https://img.shields.io/github/license/kullibbin-hub/alt-kde-helper)
 ## Описание программы
 
 Программа предназначена для настройки и обслуживания операционных систем ALT Linux 11 с рабочим столом KDE6 — KWorkstation и особенно Starterkit, который можно одним кликом привести в полностью готовый для работы дистрибутив, оставаясь быстрым и лёгким, но полностью функциональным. Добавлена экспериментально поддержка Sisyphus, но без каких-либо гарантий, так как это тестовый, постоянно меняющийся репозиторий. Также заранее добавлена поддержка p12, так как на Сизифе сейчас все работает корректно.
