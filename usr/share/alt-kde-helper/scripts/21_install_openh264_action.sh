@@ -56,6 +56,12 @@ else
     echo -e "\033[1;33m→ Репозиторий aides уже установлен\033[0m"
 fi
 
+# Проверяем, не отключён ли репозиторий aides
+if stplr repo ls 2>/dev/null | grep -q "Отключен: true"; then
+    echo -e "\033[1;33m→ Включение репозитория aides...\033[0m"
+    sudo stplr repo set-disabled aides false
+fi
+
 # 7. Обновляем индексы stplr
 echo -e "\033[1;33m→ Обновление репозиториев stplr...\033[0m"
 sudo stplr ref
