@@ -1296,6 +1296,13 @@ class MainWindow(QMainWindow):
                 if os.path.exists(script_src) and not os.path.exists(action_path):
                     shutil.copy2(script_src, action_path)
 
+            # Gear Lever: обновление AppImage (скрипт сам проверит наличие)
+            update_script = "30_update_appimage_action.sh"
+            script_src = os.path.join(scripts_dir, update_script)
+            action_path = os.path.join(actions_dir, update_script)
+            if os.path.exists(script_src) and not os.path.exists(action_path):
+                shutil.copy2(script_src, action_path)
+
         mirror_card = None
         for card in self.maintenance_page.cards:
             if isinstance(card, MirrorCard):
