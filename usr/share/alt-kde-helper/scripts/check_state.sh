@@ -179,3 +179,9 @@ fi
 if [ -f "$HOME/.local/share/kio/servicemenus/alt-kde-helper-actions.desktop" ]; then
     touch "$STATE_DIR/29_add_actions_dolphin_action.sh"
 fi
+# ============================================================
+# Исправление конфликта Wi-Fi/Bluetooth (32_fix_bluetooth_wifi_coex_action.sh)
+# ============================================================
+if [ -f "/etc/modprobe.d/rtw88_core.conf" ] && grep -q "disable_lps_deep=Y" /etc/modprobe.d/rtw88_core.conf 2>/dev/null; then
+    touch "$STATE_DIR/32_fix_bluetooth_wifi_coex_action.sh"
+fi

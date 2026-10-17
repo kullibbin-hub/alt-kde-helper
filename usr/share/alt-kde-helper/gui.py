@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # gui.py - графический интерфейс Alt KDE Helper
 import sys
 import os
@@ -872,7 +873,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
         self.setMinimumSize(800, 600)
-        self.resize(800, 680)
+        self.resize(800, 700)
 
         clear_actions_dir()
 
@@ -1973,6 +1974,18 @@ class MainWindow(QMainWindow):
             "12_fix_copy_indicator_action.sh",
             "12_fix_copy_indicator_rollback.sh"
         ))
+
+        cards.append(ActionCard(
+            "Исправить конфликт Wi-Fi и Bluetooth",
+            "Отключает глубокий сон Wi-Fi-драйвера Realtek (LPS Deep).\n"
+            "Помогает, если Bluetooth-аудио периодически прерывается\n"
+            "при активном Wi-Fi (особенно на чипах RTL8821CE).\n"
+            "Немного увеличивает энергопотребление.\n\n"
+            "Требуется перезагрузка.",
+            "32_fix_bluetooth_wifi_coex_action.sh",
+            "32_fix_bluetooth_wifi_coex_rollback.sh"
+        ))
+
 
         cards.append(ActionCard(
             "Показ миниатюр для 3D-файлов (STL, FCstd)",
