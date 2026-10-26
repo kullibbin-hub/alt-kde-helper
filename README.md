@@ -47,7 +47,7 @@
 
 ### Установка через RPM-пакет
 
-Скачайте файл alt-kde-helper-х.х.х.noarch.rpm со страницы релизов:
+Скачайте файл alt-kde-helper-х.х.х-alt1.noarch.rpm со страницы релизов:
 
 https://github.com/kullibbin-hub/alt-kde-helper/releases/latest
 
@@ -70,7 +70,7 @@ x.x.x - версия пакета.
 ```
 3. Введите пароль root, затем выполните:
 ```bash
-apt-get install /home/$(logname)/alt-kde-helper-х.х.х.noarch.rpm
+apt-get install /home/$(logname)/alt-kde-helper-х.х.х-alt1.noarch.rpm
 ```
 х.х.х - подставьте версию, как в файле пакета
 
