@@ -1,8 +1,14 @@
 #!/bin/bash
-
 echo -e "\033[1;36m========================================\033[0m"
 echo -e "\033[1;36mВключение 3D-ускорения для Google Chrome (Flatpak)\033[0m"
 echo -e "\033[1;36m========================================\033[0m"
+
+# Проверяем наличие flatpak
+if ! command -v flatpak &>/dev/null; then
+    echo -e "\033[1;33m⚠ Flatpak не установлен. Пропускаем.\033[0m"
+    rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
+    exit 0
+fi
 
 echo -e "\033[1;33m→ Поиск Google Chrome в Flatpak...\033[0m"
 

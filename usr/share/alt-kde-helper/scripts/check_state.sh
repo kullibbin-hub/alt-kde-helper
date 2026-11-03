@@ -185,3 +185,45 @@ fi
 if [ -f "/etc/modprobe.d/rtw88_core.conf" ] && grep -q "disable_lps_deep=Y" /etc/modprobe.d/rtw88_core.conf 2>/dev/null; then
     touch "$STATE_DIR/32_fix_bluetooth_wifi_coex_action.sh"
 fi
+# ============================================================
+# 22. Замедление мыши по кнопке "вперёд" (33_mouse-speed_action.sh)
+# ============================================================
+HOTKEY="Meta+Ctrl+Alt+1"
+SCRIPT_DIR="$HOME/.local/share/kde-mouse-speed"
+AUTOSTART_FILE="$HOME/.config/autostart/restore-mouse-speed.desktop"
+APP_FILE="$HOME/.local/share/applications/net.local.toggle-mouse-speed.sh.desktop"
+APP_NAME="net.local.toggle-mouse-speed.sh.desktop"
+KGLOBAL_FILE="$HOME/.config/kglobalshortcutsrc"
+KCM_FILE="$HOME/.config/kcminputrc"
+
+MOUSE_OK=1
+
+# Проверяем наличие и исполняемость обоих скриптов
+if [ ! -x "$SCRIPT_DIR/toggle-mouse-speed.sh" ] || [ ! -x "$SCRIPT_DIR/restore-mouse-speed.sh" ]; then
+    MOUSE_OK=0
+fi
+
+# Проверяем .desktop файлы
+if [ ! -f "$AUTOSTART_FILE" ] || [ ! -f "$APP_FILE" ]; then
+    MOUSE_OK=0
+fi
+
+# Проверяем наличие записи в kglobalshortcutsrc
+if [ "$MOUSE_OK" -eq 1 ]; then
+    if ! grep -q "^\[services\]\[$APP_NAME\]" "$KGLOBAL_FILE" 2>/dev/null; then
+        MOUSE_OK=0
+    elif ! grep -A2 "^\[services\]\[$APP_NAME\]" "$KGLOBAL_FILE" 2>/dev/null | grep -q "_launch=.*$HOTKEY"; then
+        MOUSE_OK=0
+    fi
+fi
+
+# Проверяем привязку кнопки ExtraButton2 в kcminputrc
+if [ "$MOUSE_OK" -eq 1 ]; then
+    if ! grep -q "^ExtraButton2=Key,$HOTKEY$" "$KCM_FILE" 2>/dev/null; then
+        MOUSE_OK=0
+    fi
+fi
+
+if [ "$MOUSE_OK" -eq 1 ]; then
+    touch "$STATE_DIR/33_mouse-speed_action.sh"
+fi
