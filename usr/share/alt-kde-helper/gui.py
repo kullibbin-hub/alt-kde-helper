@@ -770,7 +770,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
         self.setMinimumSize(800, 600)
-        self.resize(800, 700)
+        self.resize(1000, 720)
 
         clear_actions_dir()
 
@@ -782,7 +782,7 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(0)
 
         left_panel = QWidget()
-        left_panel.setFixedWidth(140)
+        left_panel.setFixedWidth(230)
         left_panel.setAutoFillBackground(True)
 
         from PyQt6.QtGui import QPalette
@@ -839,25 +839,31 @@ class MainWindow(QMainWindow):
         left_panel_layout.addWidget(menu_line)
         left_panel_layout.addSpacing(20)
 
-        self.tab_btn_maintenance = QPushButton("Обслуживание")
+        self.tab_btn_maintenance = QPushButton(" Обслуживание")
         self.tab_btn_maintenance.setProperty("class", "TabButtonActive")
         self.tab_btn_maintenance.setCheckable(True)
         self.tab_btn_maintenance.setChecked(True)
-        self.tab_btn_maintenance.setMinimumHeight(50)
+        self.tab_btn_maintenance.setMinimumHeight(56)
+        self.tab_btn_maintenance.setIcon(QIcon.fromTheme("system-software-update", QIcon.fromTheme("applications-system")))
+        self.tab_btn_maintenance.setIconSize(QSize(22, 22))
         self.tab_btn_maintenance.clicked.connect(lambda: self.switch_tab(0))
         left_panel_layout.addWidget(self.tab_btn_maintenance)
 
-        self.tab_btn_fixes = QPushButton("Настройки")
+        self.tab_btn_fixes = QPushButton(" Настройки")
         self.tab_btn_fixes.setProperty("class", "TabButton")
         self.tab_btn_fixes.setCheckable(True)
-        self.tab_btn_fixes.setMinimumHeight(50)
+        self.tab_btn_fixes.setMinimumHeight(56)
+        self.tab_btn_fixes.setIcon(QIcon.fromTheme("preferences-system", QIcon.fromTheme("preferences-other")))
+        self.tab_btn_fixes.setIconSize(QSize(22, 22))
         self.tab_btn_fixes.clicked.connect(lambda: self.switch_tab(1))
         left_panel_layout.addWidget(self.tab_btn_fixes)
 
-        self.tab_btn_appearance = QPushButton("Оформление")
+        self.tab_btn_appearance = QPushButton(" Оформление")
         self.tab_btn_appearance.setProperty("class", "TabButton")
         self.tab_btn_appearance.setCheckable(True)
-        self.tab_btn_appearance.setMinimumHeight(50)
+        self.tab_btn_appearance.setMinimumHeight(56)
+        self.tab_btn_appearance.setIcon(QIcon.fromTheme("preferences-desktop-theme", QIcon.fromTheme("preferences-desktop")))
+        self.tab_btn_appearance.setIconSize(QSize(22, 22))
         self.tab_btn_appearance.clicked.connect(lambda: self.switch_tab(2))
         left_panel_layout.addWidget(self.tab_btn_appearance)
 
@@ -947,6 +953,35 @@ class MainWindow(QMainWindow):
         self.recommended_state = False
         self.help_dialog = None
 
+        self.run_check_state()
+        ensure_packages_file(self)
+
+        for card in self.get_all_cards():
+            if hasattr(card, 'load_state'):
+                card.load_state()
+
+        from threading import Thread
+        Thread(target=self.check_updates_background, daemon=True).start()
+
+    def showEvent(self, event):
+        """Переприменяем стили при первом показе окна"""
+        super().showEvent(event)
+        saved = load_theme_setting()
+        if saved is not None:
+            QApplication.instance().setStyleSheet(get_stylesheet(force_dark=saved))
+        else:
+            QApplication.instance().setStyleSheet(get_stylesheet())
+
+    def event(self, event):
+        if event.type() == QEvent.Type.ApplicationPaletteChange:
+            saved = load_theme_setting()
+            if saved is not None:
+                QApplication.instance().setStyleSheet(get_stylesheet(force_dark=saved))
+            else:
+                QApplication.instance().setStyleSheet(get_stylesheet())
+            return True
+        return super().event(event)
+
     def show_menu(self):
         menu = QMenu(self)
         menu.setStyleSheet("QMenu { menu-scrollable: 1; }")
@@ -979,7 +1014,24 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         menu.addAction(about_action)
 
+        menu.addSeparator()
+
+        theme_action = QAction("Тёмная тема", self)
+        theme_action.setCheckable(True)
+        saved = load_theme_setting()
+        if saved is None:
+            theme_action.setChecked(is_dark_theme())
+        else:
+            theme_action.setChecked(saved)
+        theme_action.triggered.connect(self.toggle_theme)
+        menu.addAction(theme_action)
+
         menu.exec(self.menu_button.mapToGlobal(QPoint(0, self.menu_button.height())))
+
+    def toggle_theme(self, checked):
+        """Переключает тему (checked = True — тёмная, False — светлая)"""
+        save_theme_setting(checked)
+        QApplication.instance().setStyleSheet(get_stylesheet(force_dark=checked))
 
     def switch_tab(self, index):
         self.maintenance_page.setVisible(index == 0)
@@ -1461,6 +1513,16 @@ class MainWindow(QMainWindow):
 
         cards.append(SimpleActionCard("Обновление системы и программ из всех источников", "Будет обновлена система из репозитория (rpm-пакеты),\nа также обновятся и другие установленные в системе источники\nи программы из них.", "05_update_system_action.sh"))
         cards.append(SimpleActionCard("Очистка кэша", "Очистка кэшей: в домашнем каталоге, для Flatpak-приложений,\nаккуратную очистку системного кэша, удаление старых журналов\nи сжатие до размера 100 МБ максимум, очистку кэша пакетов\n(без применения небезопасной опции autoremove),\nудаление неиспользуемых рантаймов Flatpak,\nудаление старых ядер.", "95_clean_cache_action.sh"))
+
+        cards.append(SimpleActionCard(
+            "Очистка данных удалённых Flatpak-приложений",
+            "Находит в ~/.var/app папки приложений Flatpak, которых больше нет в системе.\n"
+            "Показывает список с именами и спрашивает подтверждение.\n"
+            "Папки перемещаются в корзину, откуда их можно восстановить,\n"
+            "если приложение понадобится снова.",
+            "96_clean_orphan_flatpak_data_action.sh"
+        ))
+
         return CategoryPage(cards)
 
 def run():

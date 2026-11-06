@@ -113,7 +113,7 @@ QPushButton[class="BottomButton"] {{
 
 /* Кнопки вкладок */
 QPushButton[class="TabButton"] {{
-    text-align: center;
+    text-align: left;
     padding: 8px 12px;
     margin-left: 5px;
     margin-right: 5px;
@@ -127,7 +127,7 @@ QPushButton[class="TabButton"]:hover {{
     background-color: palette(alternate-base);
 }}
 QPushButton[class="TabButtonActive"] {{
-    text-align: center;
+    text-align: left;
     padding: 8px 12px;
     margin-left: 5px;
     margin-right: 5px;

@@ -34,12 +34,16 @@ echo -e "\033[1;33m→ Очистка корзины...\033[0m"
 rm -rf ~/.local/share/Trash/{files,info}/*
 
 echo -e "\033[1;33m→ Очистка кэша Flatpak...\033[0m"
+rm -rf ~/.var/app/*/.cache/*
 rm -rf ~/.var/app/*/cache/*
+rm -rf ~/.var/app/*/.local/share/Trash/*
+rm -rf ~/.var/app/*/.cache/thumbnails/*
 
 echo -e "\033[1;33m→ Удаление неиспользуемых рантаймов Flatpak...\033[0m"
 # Закрепляем openh264, чтобы --unused его не удалял
 sudo flatpak pin org.freedesktop.Platform.openh264 2>/dev/null || true
 flatpak uninstall --unused -y 2>/dev/null || true
+sudo flatpak uninstall --unused -y 2>/dev/null || true
 
 echo -e "\033[1;33m→ Очистка временных файлов Audacity...\033[0m"
 sudo rm -rf /var/tmp/audacity-*
