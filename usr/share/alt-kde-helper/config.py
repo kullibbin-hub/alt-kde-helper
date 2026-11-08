@@ -47,24 +47,32 @@ def get_stylesheet(force_dark=None):
         is_dark = force_dark
 
     if is_dark:
-        # Тёмная тема: тёмно-зелёный фон, светлый текст
-        green_bg = "#1a4d1a"      # тёмно-зелёный фон карточки
-        green_text = "#66ff66"     # ярко-зелёный текст
-        orange_bg = "#4a2a1a"      # тёмно-оранжевый фон
-        orange_text = "#ffa366"    # светло-оранжевый текст
+        green_bg = "#1a4d1a"
+        green_text = "#66ff66"
+        orange_bg = "#4a2a1a"
+        orange_text = "#ffa366"
     else:
-        # Светлая тема: светлый фон, тёмный текст
-        green_bg = "#e8f5e9"       # светло-зелёный фон карточки
-        green_text = "#2e7d32"     # тёмно-зелёный текст
-        orange_bg = "#fff0e0"      # светло-оранжевый фон
-        orange_text = "#d35400"     # тёмно-оранжевый текст
+        green_bg = "#e8f5e9"
+        green_text = "#2e7d32"
+        orange_bg = "#fff0e0"
+        orange_text = "#d35400"
+
+    # Цвет чётных строк в QTreeWidget — мягкий, ближе к base
+    app = QApplication.instance()
+    if app is not None:
+        _base = app.palette().color(QPalette.ColorRole.Base)
+        if is_dark:
+            _zebra_alt = _base.lighter(112).name()
+        else:
+            _zebra_alt = _base.darker(103).name()
+    else:
+        _zebra_alt = "#2a2a2a" if is_dark else "#f5f5f5"
 
     return f"""
 QMainWindow {{
     background-color: palette(window);
 }}
 
-/* Общий стиль для всех карточек */
 QFrame[class="ActionCard"],
 QFrame[class="SimpleActionCard"],
 QFrame[class="MirrorCard"] {{
@@ -75,7 +83,6 @@ QFrame[class="MirrorCard"] {{
     margin-bottom: 2px;
 }}
 
-/* Карточка с выбранным действием (оранжевый фон) */
 QFrame[class="ActionCardOrange"],
 QFrame[class="SimpleActionCardOrange"] {{
     background-color: {orange_bg};
@@ -85,7 +92,6 @@ QFrame[class="SimpleActionCardOrange"] {{
     margin-bottom: 2px;
 }}
 
-/* Карточка с применённым действием (зелёный фон) */
 QFrame[class="ActionCardGreen"],
 QFrame[class="SimpleActionCardGreen"] {{
     background-color: {green_bg};
@@ -95,7 +101,6 @@ QFrame[class="SimpleActionCardGreen"] {{
     margin-bottom: 2px;
 }}
 
-/* Текст внутри карточек */
 QLabel[class="DescriptionOrange"] {{
     color: {orange_text};
 }}
@@ -104,14 +109,12 @@ QLabel[class="DescriptionGreen"] {{
     color: {green_text};
 }}
 
-/* Кнопки внизу */
 QPushButton[class="BottomButton"] {{
     padding: 8px 16px;
     font-weight: bold;
     min-width: 120px;
 }}
 
-/* Кнопки вкладок */
 QPushButton[class="TabButton"] {{
     text-align: left;
     padding: 8px 12px;
@@ -134,6 +137,10 @@ QPushButton[class="TabButtonActive"] {{
     background-color: palette(highlight);
     color: palette(highlighted-text);
 }}
+
+QTreeView {{
+    alternate-background-color: {_zebra_alt};
+}}
 """
 
 # Для обратной совместимости (если где-то используется STYLESHEET напрямую)
@@ -149,16 +156,19 @@ def get_state_dir():
     return state_dir
 
 def get_actions_dir():
-    actions_dir = '/tmp/alt-kde-helper-actions'
+    import tempfile
+    actions_dir = os.path.join(tempfile.gettempdir(), f'alt-kde-helper-actions-{os.getuid()}')
     os.makedirs(actions_dir, exist_ok=True)
     return actions_dir
 
 def clear_actions_dir():
     actions_dir = get_actions_dir()
+    if not os.path.exists(actions_dir):
+        return
     for f in os.listdir(actions_dir):
         fpath = os.path.join(actions_dir, f)
         try:
-            if os.path.isfile(fpath):
+            if os.path.isfile(fpath) or os.path.islink(fpath):
                 os.unlink(fpath)
         except Exception:
             pass

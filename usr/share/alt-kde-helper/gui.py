@@ -19,6 +19,9 @@ from config import (
     clear_actions_dir, get_help_path, get_version,
     load_theme_setting, save_theme_setting, is_dark_theme
 )
+from flatbackup import FlatpakBackupPage
+from flatinstall import FlatpakInstallPage
+from busy import BUSY
 
 # Путь к вшитому пресету панели
 PRESET_FILE_PATH = '/opt/alt-kde-helper/usr/share/alt-kde-helper/plasma-org.kde.plasma.desktop-appletsrc'
@@ -133,6 +136,17 @@ def ensure_packages_file(parent=None):
 
     return target_file
 
+def copy_and_patch(src, dst, actions_dir):
+    """Копирует скрипт, заменяя жестко прописанный путь /tmp/alt-kde-helper-actions
+    на актуальный путь для текущего пользователя."""
+    with open(src, 'r', encoding='utf-8') as f:
+        content = f.read()
+    # Заменяем старый путь на новый
+    content = content.replace('/tmp/alt-kde-helper-actions', actions_dir)
+    with open(dst, 'w', encoding='utf-8') as f:
+        f.write(content)
+    os.chmod(dst, 0o755)
+
 class ActionWorker(QThread):
     finished = pyqtSignal()
 
@@ -150,23 +164,27 @@ class ActionWorker(QThread):
 
         cmd = 'for script in ' + ' '.join(f'"{s}"' for s in scripts) + '; do bash "$script"; done'
 
-        self.process = subprocess.Popen(
-            ['konsole', '--new-tab', '--title', 'Применение изменений', '-e', 'bash', '-c', cmd],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-        import time
-        time.sleep(0.5)
-
+        BUSY.acquire()
         try:
-            result = subprocess.run(['pgrep', '-f', f'konsole.*Применение изменений'], capture_output=True, text=True)
-            if result.returncode == 0 and result.stdout.strip():
-                self.terminal_pid = int(result.stdout.strip().split('\n')[0])
-        except:
-            pass
+            self.process = subprocess.Popen(
+                ['konsole', '--separate', '--title', 'Применение изменений', '-e', 'bash', '-c', cmd],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
 
-        self.process.wait()
+            import time
+            time.sleep(0.5)
+
+            try:
+                result = subprocess.run(['pgrep', '-f', f'konsole.*Применение изменений'], capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip():
+                    self.terminal_pid = int(result.stdout.strip().split('\n')[0])
+            except:
+                pass
+
+            self.process.wait()
+        finally:
+            BUSY.release()
         self.finished.emit()
 
     def terminate_terminal(self):
@@ -764,13 +782,14 @@ class AppearancePage(QWidget):
         layout.addWidget(scroll)
         self.setLayout(layout)
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
         self.setMinimumSize(800, 600)
-        self.resize(1000, 720)
+        self.resize(1070, 710)
 
         clear_actions_dir()
 
@@ -782,7 +801,7 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(0)
 
         left_panel = QWidget()
-        left_panel.setFixedWidth(230)
+        left_panel.setFixedWidth(180)
         left_panel.setAutoFillBackground(True)
 
         from PyQt6.QtGui import QPalette
@@ -867,6 +886,32 @@ class MainWindow(QMainWindow):
         self.tab_btn_appearance.clicked.connect(lambda: self.switch_tab(2))
         left_panel_layout.addWidget(self.tab_btn_appearance)
 
+        left_panel_layout.addSpacing(15)
+        _sep = QFrame()
+        _sep.setFrameShape(QFrame.Shape.HLine)
+        _sep.setFrameShadow(QFrame.Shadow.Sunken)
+        _sep.setStyleSheet("background-color: palette(mid); margin-left: 5px; margin-right: 5px;")
+        left_panel_layout.addWidget(_sep)
+        left_panel_layout.addSpacing(15)
+
+        self.tab_btn_flatpak_backup = QPushButton(" Бэкап Flatpak")
+        self.tab_btn_flatpak_backup.setProperty("class", "TabButton")
+        self.tab_btn_flatpak_backup.setCheckable(True)
+        self.tab_btn_flatpak_backup.setMinimumHeight(56)
+        self.tab_btn_flatpak_backup.setIcon(QIcon.fromTheme("document-save", QIcon.fromTheme("drive-harddisk")))
+        self.tab_btn_flatpak_backup.setIconSize(QSize(22, 22))
+        self.tab_btn_flatpak_backup.clicked.connect(lambda: self.switch_tab(3))
+        left_panel_layout.addWidget(self.tab_btn_flatpak_backup)
+
+        self.tab_btn_flatpak_install = QPushButton(" Установка Flatpak")
+        self.tab_btn_flatpak_install.setProperty("class", "TabButton")
+        self.tab_btn_flatpak_install.setCheckable(True)
+        self.tab_btn_flatpak_install.setMinimumHeight(56)
+        self.tab_btn_flatpak_install.setIcon(QIcon.fromTheme("system-software-install", QIcon.fromTheme("package-install")))
+        self.tab_btn_flatpak_install.setIconSize(QSize(22, 22))
+        self.tab_btn_flatpak_install.clicked.connect(lambda: self.switch_tab(4))
+        left_panel_layout.addWidget(self.tab_btn_flatpak_install)
+
         left_panel_layout.addStretch()
         left_panel.setLayout(left_panel_layout)
 
@@ -888,22 +933,29 @@ class MainWindow(QMainWindow):
         self.appearance_page.btn_load_panel.clicked.connect(self.on_load_panel_settings)
         self.appearance_page.btn_reset_panel.clicked.connect(self.on_reset_panel_default)
 
+        self.flatpak_backup_page = FlatpakBackupPage()
+        self.flatpak_install_page = FlatpakInstallPage()
+
         self.stack_layout.addWidget(self.maintenance_page)
         self.stack_layout.addWidget(self.fixes_page)
         self.stack_layout.addWidget(self.appearance_page)
+        self.stack_layout.addWidget(self.flatpak_backup_page)
+        self.stack_layout.addWidget(self.flatpak_install_page)
 
         self.fixes_page.setVisible(False)
         self.appearance_page.setVisible(False)
+        self.flatpak_backup_page.setVisible(False)
+        self.flatpak_install_page.setVisible(False)
 
         self.stack.setLayout(self.stack_layout)
         right_layout.addWidget(self.stack, 1)
 
         bottom_layout = QHBoxLayout()
-        line_h = QFrame()
-        line_h.setFrameShape(QFrame.Shape.HLine)
-        line_h.setFrameShadow(QFrame.Shadow.Sunken)
-        line_h.setFixedHeight(1)
-        right_layout.addWidget(line_h)
+        self.bottom_line = QFrame()
+        self.bottom_line.setFrameShape(QFrame.Shape.HLine)
+        self.bottom_line.setFrameShadow(QFrame.Shadow.Sunken)
+        self.bottom_line.setFixedHeight(1)
+        right_layout.addWidget(self.bottom_line)
 
         bottom_layout.setContentsMargins(0, 10, 10, 10)
         bottom_layout.setSpacing(10)
@@ -953,6 +1005,8 @@ class MainWindow(QMainWindow):
         self.recommended_state = False
         self.help_dialog = None
 
+        BUSY.changed.connect(self._on_busy_changed)
+
         self.run_check_state()
         ensure_packages_file(self)
 
@@ -962,6 +1016,11 @@ class MainWindow(QMainWindow):
 
         from threading import Thread
         Thread(target=self.check_updates_background, daemon=True).start()
+
+    def _on_busy_changed(self, busy):
+        """Блокирует кнопки применения, пока работает konsole."""
+        self.apply_btn.setEnabled(not busy)
+        self.recommended_btn.setEnabled(not busy)
 
     def showEvent(self, event):
         """Переприменяем стили при первом показе окна"""
@@ -1037,16 +1096,26 @@ class MainWindow(QMainWindow):
         self.maintenance_page.setVisible(index == 0)
         self.fixes_page.setVisible(index == 1)
         self.appearance_page.setVisible(index == 2)
+        self.flatpak_backup_page.setVisible(index == 3)
+        self.flatpak_install_page.setVisible(index == 4)
 
-        self.tab_btn_maintenance.setProperty("class", "TabButtonActive" if index == 0 else "TabButton")
-        self.tab_btn_fixes.setProperty("class", "TabButtonActive" if index == 1 else "TabButton")
-        self.tab_btn_appearance.setProperty("class", "TabButtonActive" if index == 2 else "TabButton")
-
-        for btn in [self.tab_btn_maintenance, self.tab_btn_fixes, self.tab_btn_appearance]:
+        tab_buttons = [
+            self.tab_btn_maintenance,
+            self.tab_btn_fixes,
+            self.tab_btn_appearance,
+            self.tab_btn_flatpak_backup,
+            self.tab_btn_flatpak_install,
+        ]
+        for i, btn in enumerate(tab_buttons):
+            btn.setProperty("class", "TabButtonActive" if index == i else "TabButton")
             btn.style().unpolish(btn)
             btn.style().polish(btn)
 
-        self.apply_btn.setEnabled(True)
+        # Нижняя панель не имеет смысла на вкладках Flatpak
+        show_bottom = index < 3
+        self.recommended_btn.setVisible(show_bottom)
+        self.apply_btn.setVisible(show_bottom)
+        self.bottom_line.setVisible(show_bottom)
 
     def get_all_cards(self):
         cards = []
@@ -1096,12 +1165,12 @@ class MainWindow(QMainWindow):
                     script_src = os.path.join(scripts_dir, card.script_name)
                     action_path = os.path.join(actions_dir, card.script_name)
                     if os.path.exists(script_src) and not os.path.exists(action_path):
-                        shutil.copy2(script_src, action_path)
+                        copy_and_patch(script_src, action_path, actions_dir)
                 if hasattr(card, 'rollback_cb') and card.rollback_cb.isChecked():
                     script_src = os.path.join(scripts_dir, card.rollback_script_name)
                     action_path = os.path.join(actions_dir, card.rollback_script_name)
                     if os.path.exists(script_src) and not os.path.exists(action_path):
-                        shutil.copy2(script_src, action_path)
+                        copy_and_patch(script_src, action_path, actions_dir)
 
         update_system_checked = False
         for card in self.maintenance_page.cards:
@@ -1116,13 +1185,13 @@ class MainWindow(QMainWindow):
                     script_src = os.path.join(scripts_dir, script)
                     action_path = os.path.join(actions_dir, script)
                     if os.path.exists(script_src) and not os.path.exists(action_path):
-                        shutil.copy2(script_src, action_path)
+                        copy_and_patch(script_src, action_path, actions_dir)
 
             update_script = "30_update_appimage_action.sh"
             script_src = os.path.join(scripts_dir, update_script)
             action_path = os.path.join(actions_dir, update_script)
             if os.path.exists(script_src) and not os.path.exists(action_path):
-                shutil.copy2(script_src, action_path)
+                copy_and_patch(script_src, action_path, actions_dir)
 
         mirror_card = self.get_mirror_card()
         if mirror_card:
@@ -1131,7 +1200,7 @@ class MainWindow(QMainWindow):
                 script_src = os.path.join(scripts_dir, selected_script)
                 action_path = os.path.join(actions_dir, selected_script)
                 if os.path.exists(script_src) and not os.path.exists(action_path):
-                    shutil.copy2(script_src, action_path)
+                    copy_and_patch(script_src, action_path, actions_dir)
 
         flathub_mirror_card = self.get_flathub_mirror_card()
         if flathub_mirror_card:
@@ -1140,7 +1209,7 @@ class MainWindow(QMainWindow):
                 script_src = os.path.join(scripts_dir, selected_script)
                 action_path = os.path.join(actions_dir, selected_script)
                 if os.path.exists(script_src) and not os.path.exists(action_path):
-                    shutil.copy2(script_src, action_path)
+                    copy_and_patch(script_src, action_path, actions_dir)
 
         action_files = [f for f in os.listdir(actions_dir) if f.endswith('.sh') and f != '99_final.sh']
         if not action_files:
@@ -1150,7 +1219,7 @@ class MainWindow(QMainWindow):
         final_script_src = os.path.join(scripts_dir, '99_final.sh')
         final_script_dst = os.path.join(actions_dir, '99_final.sh')
         if os.path.exists(final_script_src) and not os.path.exists(final_script_dst):
-            shutil.copy2(final_script_src, final_script_dst)
+            copy_and_patch(final_script_src, final_script_dst, actions_dir)
 
         self.current_worker = ActionWorker(actions_dir)
         self.current_worker.finished.connect(self.on_actions_finished)
@@ -1186,7 +1255,7 @@ class MainWindow(QMainWindow):
             final_script_src = os.path.join(scripts_dir, '99_final.sh')
             final_script_dst = os.path.join(actions_dir, '99_final.sh')
             if os.path.exists(final_script_src) and not os.path.exists(final_script_dst):
-                shutil.copy2(final_script_src, final_script_dst)
+                copy_and_patch(final_script_src, final_script_dst, actions_dir)
             self.current_worker = ActionWorker(actions_dir)
             self.current_worker.finished.connect(self.on_actions_finished)
             self.current_worker.start()
@@ -1304,10 +1373,15 @@ class MainWindow(QMainWindow):
                f"echo 'Пакет сохранён в: {rpm_path}' && echo '' && "
                f"echo 'Нажмите любую клавишу для выхода...' && read -n 1")
 
-        process = subprocess.Popen(['konsole', '--new-tab', '--title', 'Установка обновления', '-e', 'bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        process.wait()
+        BUSY.acquire()
+        try:
+            process = subprocess.Popen(['konsole', '--separate', '--title', 'Установка обновления', '-e', 'bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process.wait()
+            rc = process.returncode
+        finally:
+            BUSY.release()
 
-        if process.returncode == 0:
+        if rc == 0:
             restart_msg = QMessageBox(self)
             restart_msg.setWindowTitle("Обновление установлено")
             restart_msg.setText(f"Пакет скачан в:\n{rpm_path}\n\nОбновление до версии {latest_version} установлено успешно!")
@@ -1377,8 +1451,12 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(config_dir))
 
     def restart_plasmashell(self):
-        subprocess.run(['killall', 'plasmashell'], capture_output=True)
-        subprocess.Popen(['bash', '-c', 'plasmashell --replace >/dev/null 2>&1 & disown'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Запускаем ровно ту цепочку, которая гарантированно работает
+        subprocess.Popen(
+            ['bash', '-c', 'kquitapp6 plasmashell && kstart plasmashell'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
 
     def on_apply_editable_tray(self):
         target_file = os.path.expanduser(f'~/.config/{PANEL_CONFIG_FILENAME}')

@@ -6,6 +6,19 @@ echo -e "\033[1;36m========================================\033[0m"
 
 FLATPAK_APP_DATA_DIR="$HOME/.var/app"
 
+fmt_size() {
+    local b=$1
+    if [ "$b" -ge 1073741824 ]; then
+        awk -v b="$b" 'BEGIN{printf "%.1f ГБ", b/1073741824}'
+    elif [ "$b" -ge 1048576 ]; then
+        awk -v b="$b" 'BEGIN{printf "%.1f МБ", b/1048576}'
+    elif [ "$b" -ge 1024 ]; then
+        awk -v b="$b" 'BEGIN{printf "%.1f КБ", b/1024}'
+    else
+        echo "${b} Б"
+    fi
+}
+
 cleanup_and_exit() {
     rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
     exit 0
@@ -55,18 +68,34 @@ if command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
     done
 fi
 
+# Подсчёт занимаемого места
+declare -A app_sizes=()
+total_bytes=0
+for app_id in "${orphan_apps[@]}"; do
+    size=$(du -sb "$FLATPAK_APP_DATA_DIR/$app_id" 2>/dev/null | cut -f1)
+    case "$size" in
+        ''|*[!0-9]*) size=0 ;;
+    esac
+    app_sizes["$app_id"]=$size
+    total_bytes=$((total_bytes + size))
+done
+
 echo -e "\033[1;33m→ Найдено: ${#orphan_apps[@]}\033[0m"
 echo ""
 for app_id in "${orphan_apps[@]}"; do
+    sz=$(fmt_size "${app_sizes[$app_id]}")
     if [ -n "${app_names[$app_id]}" ]; then
-        echo "  • ${app_names[$app_id]} — $app_id"
+        echo "  • ${app_names[$app_id]} — $app_id   $sz"
     else
-        echo "  • $app_id"
+        echo "  • $app_id   $sz"
     fi
 done
 echo ""
+total_h=$(fmt_size "$total_bytes")
+echo -e "\033[1;33m→ Всего будет освобождено: $total_h\033[0m"
+echo ""
 
-if kdialog --yesno "Найдены данные для отсутствующих приложений из Flatpak. Удалить? Удаленные папки помещаются в корзину, откуда вы можете восстановить те, которые нужны."; then
+if kdialog --yesno "Найдены данные для отсутствующих приложений из Flatpak.\n\nЗанято: $total_h\n\nУдалить? Удаленные папки помещаются в корзину, откуда вы\nможете восстановить те, которые нужны."; then
     removed=0
     for app_id in "${orphan_apps[@]}"; do
         if gio trash -- "$FLATPAK_APP_DATA_DIR/$app_id" 2>/dev/null; then

@@ -39,11 +39,14 @@ rm -rf ~/.var/app/*/cache/*
 rm -rf ~/.var/app/*/.local/share/Trash/*
 rm -rf ~/.var/app/*/.cache/thumbnails/*
 
+# Универсальная очистка внутренних кэшей браузеров и Electron-приложений
+find ~/.var/app -type d \( -name "cache2" -o -name "startupCache" -o -name "Code Cache" -o -name "GPUCache" -o -name "CacheStorage" -o -name "ShaderCache" \) -exec rm -rf {} + 2>/dev/null
+
 echo -e "\033[1;33m→ Удаление неиспользуемых рантаймов Flatpak...\033[0m"
 # Закрепляем openh264, чтобы --unused его не удалял
 sudo flatpak pin org.freedesktop.Platform.openh264 2>/dev/null || true
-flatpak uninstall --unused -y 2>/dev/null || true
 sudo flatpak uninstall --unused -y 2>/dev/null || true
+flatpak uninstall --user --unused -y 2>/dev/null || true
 
 echo -e "\033[1;33m→ Очистка временных файлов Audacity...\033[0m"
 sudo rm -rf /var/tmp/audacity-*

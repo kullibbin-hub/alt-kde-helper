@@ -4,12 +4,14 @@ echo -e "\033[1;36mПодключение зеркала Flathub ALT Gnome\033[0
 echo -e "\033[1;36m========================================\033[0m"
 
 # Получаем GPG-ключ
+GPG_FILE=$(mktemp) || exit 1
 curl -s https://flathub.alt-gnome.ru/repo/flathub.flatpakrepo \
 | awk -F= '/^GPGKey/{print $2}' \
-| base64 -d > /tmp/proxy.gpg
+| base64 -d > "$GPG_FILE"
 
-if [ $? -ne 0 ] || [ ! -s /tmp/proxy.gpg ]; then
+if [ $? -ne 0 ] || [ ! -s "$GPG_FILE" ]; then
     echo -e "\033[1;31m❌ Ошибка: не удалось получить GPG-ключ Flathub ALT Gnome\033[0m"
+    rm -f "$GPG_FILE"
     exit 1
 fi
 
@@ -17,18 +19,18 @@ fi
 sudo flatpak remote-modify --url=https://flathub.alt-gnome.ru/repo flathub
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: не удалось изменить адрес Flathub\033[0m"
-    rm -f /tmp/proxy.gpg
+    rm -f "$GPG_FILE"
     exit 1
 fi
 
 # Импортируем GPG-ключ
-sudo flatpak remote-modify --gpg-import=/tmp/proxy.gpg flathub
+sudo flatpak remote-modify --gpg-import="$GPG_FILE" flathub
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: не удалось импортировать GPG-ключ Flathub ALT Gnome\033[0m"
-    rm -f /tmp/proxy.gpg
+    rm -f "$GPG_FILE"
     exit 1
 fi
-rm -f /tmp/proxy.gpg
+rm -f "$GPG_FILE"
 
 # Проверка доступности зеркала через flatpak
 echo -e "\033[1;33m→ Проверка доступности зеркала ALT Gnome через flatpak...\033[0m"
