@@ -17,7 +17,7 @@ is_sudo_not_configured() {
 
 # Функция запроса настройки sudo через kdialog
 ask_setup_sudo() {
-    kdialog --yesno "Для работы программы необходим доступ к sudo.\n\nВыполнить настройку sudo?" --title "Alt KDE Helper"
+    kdialog --yesno "Для работы программы необходим доступ к sudo.\n\nВыполнить настройку sudo?\n\nВАЖНО! Обратно отключить sudo можно в любое время      \nпо нижней кнопке в левой панели программы.\n" --title "Alt KDE Helper"
 }
 
 # Функция запуска main.py

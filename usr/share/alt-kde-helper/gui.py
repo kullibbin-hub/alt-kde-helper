@@ -710,36 +710,73 @@ class AppearancePage(QWidget):
 
         self.btn_editable_tray = QPushButton("Сделать область уведомления редактируемой")
         self.btn_editable_tray.setProperty("class", "BottomButton")
-        self.btn_editable_tray.setMinimumHeight(50)
+        self.btn_editable_tray.setMinimumHeight(40)
         self.btn_editable_tray.setToolTip("Позволяет перемещать значки громкости, раскладки клавиатуры,\nподключенных устройств в режиме редактирования панели.\n\nДобавленные вручную виджеты будут удалены,\nнадо будет добавить их заново.")
         content_layout.addWidget(self.btn_editable_tray)
 
         self.btn_save_panel = QPushButton("Сохранить настройки виджетов панели")
         self.btn_save_panel.setProperty("class", "BottomButton")
-        self.btn_save_panel.setMinimumHeight(50)
+        self.btn_save_panel.setMinimumHeight(40)
         self.btn_save_panel.setToolTip("Сохраняет текущие настройки панели и виджетов\nв архив tar.gz. Выберите путь и имя файла.")
         content_layout.addWidget(self.btn_save_panel)
 
         self.btn_load_panel = QPushButton("Загрузить настройки виджетов панели")
         self.btn_load_panel.setProperty("class", "BottomButton")
-        self.btn_load_panel.setMinimumHeight(50)
+        self.btn_load_panel.setMinimumHeight(40)
         self.btn_load_panel.setToolTip("Загружает настройки панели из ранее сохранённого\nархива tar.gz. Выберите файл архива.")
         content_layout.addWidget(self.btn_load_panel)
 
         self.btn_reset_panel = QPushButton("Вернуть расположение виджетов по умолчанию")
         self.btn_reset_panel.setProperty("class", "BottomButton")
-        self.btn_reset_panel.setMinimumHeight(50)
+        self.btn_reset_panel.setMinimumHeight(40)
         self.btn_reset_panel.setToolTip("Удаляет текущие настройки панели и восстанавливает\nзаводские настройки по умолчанию.\n\nДобавленные вручную виджеты будут удалены.")
         content_layout.addWidget(self.btn_reset_panel)
 
-        # --- Визуальный разделитель ---
-        line = QFrame()
-        line.setFrameShape(QFrame.Shape.HLine)
-        line.setFrameShadow(QFrame.Shadow.Sunken)
-        line.setStyleSheet("background-color: palette(mid); margin-top: 10px; margin-bottom: 10px;")
-        content_layout.addWidget(line)
+        content_layout.addSpacing(10)
 
-        # --- Блок 2: Дополнительные настройки ---
+        # --- Визуальный разделитель 1 ---
+        line1 = QFrame()
+        line1.setFrameShape(QFrame.Shape.HLine)
+        line1.setFrameShadow(QFrame.Shadow.Sunken)
+        line1.setStyleSheet("background-color: palette(mid); margin-top: 10px; margin-bottom: 10px;")
+        content_layout.addWidget(line1)
+
+        # --- Блок 2: Современный интерфейс ---
+        content_layout.addSpacing(10)
+
+        self.btn_modern_light = QPushButton("Светлая панель и светлые окна")
+        self.btn_modern_light.setProperty("class", "BottomButton")
+        self.btn_modern_light.setMinimumHeight(40)
+        self.btn_modern_light.setToolTip("Применяет современные настройки: светлая панель, светлые окна, шрифт 10, Papirus.")
+        content_layout.addWidget(self.btn_modern_light)
+
+        self.btn_modern_mixed = QPushButton("Тёмная панель и светлые окна")
+        self.btn_modern_mixed.setProperty("class", "BottomButton")
+        self.btn_modern_mixed.setMinimumHeight(40)
+        self.btn_modern_mixed.setToolTip("Применяет современные настройки: тёмная панель, светлые окна, шрифт 10, Papirus.")
+        content_layout.addWidget(self.btn_modern_mixed)
+
+        self.btn_modern_dark = QPushButton("Тёмная панель и тёмные окна")
+        self.btn_modern_dark.setProperty("class", "BottomButton")
+        self.btn_modern_dark.setMinimumHeight(40)
+        self.btn_modern_dark.setToolTip("Применяет современные настройки: тёмная панель, тёмные окна, шрифт 10, Papirus.")
+        content_layout.addWidget(self.btn_modern_dark)
+
+        self.btn_rollback_ui = QPushButton("Вернуть предыдущий интерфейс")
+        self.btn_rollback_ui.setProperty("class", "BottomButton")
+        self.btn_rollback_ui.setMinimumHeight(40)
+        self.btn_rollback_ui.setToolTip("Возвращает настройки, которые были до первого нажатия на одну из кнопок выше.")
+        content_layout.addWidget(self.btn_rollback_ui)
+
+        # --- Визуальный разделитель 2 ---
+        content_layout.addSpacing(15)
+        line2 = QFrame()
+        line2.setFrameShape(QFrame.Shape.HLine)
+        line2.setFrameShadow(QFrame.Shadow.Sunken)
+        line2.setStyleSheet("background-color: palette(mid); margin-top: 10px; margin-bottom: 10px;")
+        content_layout.addWidget(line2)
+
+        # --- Блок 3: Дополнительные настройки ---
         content_layout.addSpacing(15)
         extra_title = QLabel("<b>Дополнительные настройки</b>")
         extra_title.setStyleSheet("font-size: 16px; margin-bottom: 10px;")
@@ -913,6 +950,27 @@ class MainWindow(QMainWindow):
         left_panel_layout.addWidget(self.tab_btn_flatpak_install)
 
         left_panel_layout.addStretch()
+        left_panel_layout.addStretch()
+
+        # --- Кнопка отключения sudo ---
+        _sep_bottom = QFrame()
+        _sep_bottom.setFrameShape(QFrame.Shape.HLine)
+        _sep_bottom.setFrameShadow(QFrame.Shadow.Sunken)
+        _sep_bottom.setStyleSheet("background-color: palette(mid); margin-left: 5px; margin-right: 5px;")
+        left_panel_layout.addWidget(_sep_bottom)
+
+        self.tab_btn_disable_sudo = QPushButton(" Отключить sudo")
+        self.tab_btn_disable_sudo.setProperty("class", "TabButton")
+        self.tab_btn_disable_sudo.setMinimumHeight(48)
+
+        self.tab_btn_disable_sudo.setStyleSheet("padding-top: 6px; padding-bottom: 10px;")
+
+        # Иконка со щитом
+        self.tab_btn_disable_sudo.setIcon(QIcon.fromTheme("security-high", QIcon.fromTheme("system-lock-screen")))
+        self.tab_btn_disable_sudo.setIconSize(QSize(22, 22))
+        self.tab_btn_disable_sudo.clicked.connect(self.on_disable_sudo)
+        left_panel_layout.addWidget(self.tab_btn_disable_sudo)
+
         left_panel.setLayout(left_panel_layout)
 
         right_widget = QWidget()
@@ -932,6 +990,12 @@ class MainWindow(QMainWindow):
         self.appearance_page.btn_save_panel.clicked.connect(self.on_save_panel_settings)
         self.appearance_page.btn_load_panel.clicked.connect(self.on_load_panel_settings)
         self.appearance_page.btn_reset_panel.clicked.connect(self.on_reset_panel_default)
+
+        # Подключаем новые кнопки современного интерфейса
+        self.appearance_page.btn_modern_light.clicked.connect(lambda: self.on_apply_modern_ui("light"))
+        self.appearance_page.btn_modern_mixed.clicked.connect(lambda: self.on_apply_modern_ui("mixed"))
+        self.appearance_page.btn_modern_dark.clicked.connect(lambda: self.on_apply_modern_ui("dark"))
+        self.appearance_page.btn_rollback_ui.clicked.connect(self.on_rollback_modern_ui)
 
         self.flatpak_backup_page = FlatpakBackupPage()
         self.flatpak_install_page = FlatpakInstallPage()
@@ -1013,6 +1077,7 @@ class MainWindow(QMainWindow):
         for card in self.get_all_cards():
             if hasattr(card, 'load_state'):
                 card.load_state()
+        self.update_maint_master_state()
 
         from threading import Thread
         Thread(target=self.check_updates_background, daemon=True).start()
@@ -1092,6 +1157,36 @@ class MainWindow(QMainWindow):
         save_theme_setting(checked)
         QApplication.instance().setStyleSheet(get_stylesheet(force_dark=checked))
 
+    def on_disable_sudo(self):
+        reply = QMessageBox.warning(self, "Отключение sudo",
+            "Вы собираетесь отключить sudo для ВСЕХ пользователей системы.\n\n"
+            "Эта программа не может полноценно работать без sudo и будет закрыта.\n\n"
+            "Чтобы снова включить sudo, просто запустите программу, она в первом окне предложит это сделать.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No)
+
+        if reply == QMessageBox.StandardButton.Yes:
+            BUSY.acquire()
+            try:
+                # Используем bash -c и полный путь к control для надежности
+                res = subprocess.run(
+                    ['pkexec', 'bash', '-c', '/usr/sbin/control sudowheel disabled'],
+                    capture_output=True,
+                    text=True
+                )
+
+                if res.returncode == 0:
+                    QMessageBox.information(self, "Готово", "Sudo успешно отключён для всех пользователей.\n\nПрограмма будет закрыта.")
+                    sys.exit(0)
+                else:
+                    # Показываем реальную ошибку, чтобы понять, что не так
+                    error_detail = res.stderr.strip() if res.stderr.strip() else f"Код возврата: {res.returncode}"
+                    QMessageBox.critical(self, "Ошибка", f"Не удалось отключить sudo.\n\nДетали:\n{error_detail}")
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Произошла ошибка:\n{e}")
+            finally:
+                BUSY.release()
+
     def switch_tab(self, index):
         self.maintenance_page.setVisible(index == 0)
         self.fixes_page.setVisible(index == 1)
@@ -1153,6 +1248,31 @@ class MainWindow(QMainWindow):
                     if card.script_name in self.recommended_scripts:
                         card.install_cb.setChecked(False)
             self.recommended_state = False
+        self.update_maint_master_state()
+
+    def update_maint_master_state(self, state=None):
+        if not hasattr(self, 'maint_target_cards') or not hasattr(self, 'maint_master_cb'):
+            return
+        checked = sum(1 for c in self.maint_target_cards if c.install_cb.isChecked())
+        total = len(self.maint_target_cards)
+        if checked == 0:
+            new_state = Qt.CheckState.Unchecked
+        elif checked == total:
+            new_state = Qt.CheckState.Checked
+        else:
+            new_state = Qt.CheckState.PartiallyChecked
+        self.maint_master_cb.blockSignals(True)
+        self.maint_master_cb.setCheckState(new_state)
+        self.maint_master_cb.blockSignals(False)
+
+    def on_maint_master_clicked(self, checked):
+        for card in self.maint_target_cards:
+            card.install_cb.blockSignals(True)
+            card.install_cb.setChecked(checked)
+            card.install_cb.blockSignals(False)
+            state_val = Qt.CheckState.Checked.value if checked else Qt.CheckState.Unchecked.value
+            card.on_install_changed(state_val)
+        self.update_maint_master_state()
 
     def apply_actions(self):
         actions_dir = get_actions_dir()
@@ -1292,6 +1412,7 @@ class MainWindow(QMainWindow):
             if hasattr(flathub_mirror_card, 'load_state'): flathub_mirror_card.load_state()
 
         self.recommended_state = False
+        self.update_maint_master_state()
 
     def run_check_state(self):
         scripts_dir = get_scripts_dir()
@@ -1515,6 +1636,223 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось сбросить настройки:\n{e}")
 
+    def on_apply_modern_ui(self, mode="mixed"):
+        # 1. Ищем иконки Papirus
+        icon_dirs = [
+            "/usr/share/icons",
+            "/usr/local/share/icons",
+            os.path.expanduser("~/.local/share/icons"),
+            os.path.expanduser("~/.icons")
+        ]
+
+        papirus_theme_name = None
+        for d in icon_dirs:
+            if os.path.exists(d):
+                for item in os.listdir(d):
+                    if 'papirus' in item.lower() and os.path.isdir(os.path.join(d, item)):
+                        papirus_theme_name = item
+                        break
+            if papirus_theme_name:
+                break
+
+        # 2. Установка иконок при необходимости
+        if not papirus_theme_name:
+            reply = QMessageBox.question(self, "Иконки не найдены",
+                "Для современного интерфейса нужны иконки Papirus. Они не найдены в системе.\n\n"
+                "Установить их сейчас? (Потребуется интернет)",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes)
+
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+            BUSY.acquire()
+            try:
+                cmd = (
+                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
+                    'echo -e "\\033[1;36mУстановка иконок Papirus\\033[0m"\n'
+                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
+                    'echo -e "\\033[1;33m→ Обновление списка пакетов...\\033[0m"\n'
+                    'sudo apt-get update\n'
+                    'echo -e "\\033[1;33m→ Установка пакетов icon-theme-Papirus и icon-theme-Papirus-Dark...\\033[0m"\n'
+                    'sudo apt-get install -y icon-theme-Papirus icon-theme-Papirus-Dark\n'
+                    'echo -e "\\033[1;32m✓ Установка завершена\\033[0m"\n'
+                    'echo ""\n'
+                    'echo "Нажмите любую клавишу для продолжения..."\n'
+                    'read -n 1\n'
+                )
+                process = subprocess.Popen(
+                    ['konsole', '--separate', '--title', 'Установка иконок Papirus', '-e', 'bash', '-c', cmd]
+                )
+                process.wait()
+            finally:
+                BUSY.release()
+
+            # Проверяем еще раз
+            for d in icon_dirs:
+                if os.path.exists(d):
+                    for item in os.listdir(d):
+                        if 'papirus' in item.lower() and os.path.isdir(os.path.join(d, item)):
+                            papirus_theme_name = item
+                            break
+                if papirus_theme_name:
+                    break
+
+            if not papirus_theme_name:
+                QMessageBox.critical(self, "Ошибка",
+                    "Иконки Papirus не были установлены (возможно, нет интернета или вы закрыли терминал).\n"
+                    "Применение отменено.")
+                return
+
+        # 3. Сохраняем старые настройки (ТОЛЬКО ЕСЛИ ФАЙЛА ЕЩЕ НЕТ)
+        config_dir = get_config_dir()
+        os.makedirs(config_dir, exist_ok=True)
+        backup_file = os.path.join(config_dir, 'ui_backup.txt')
+
+        if not os.path.exists(backup_file):
+            font_keys = ['font', 'menuFont', 'toolbarFont', 'taskbarFont', 'smallestReadableFont']
+            settings = {}
+            for k in font_keys:
+                val = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', k], capture_output=True, text=True).stdout.strip()
+                if val: settings[k] = val
+
+            active_font = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', 'activeFont'], capture_output=True, text=True).stdout.strip()
+            if active_font: settings['activeFont'] = active_font
+
+            icons = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'Icons', '--key', 'Theme'], capture_output=True, text=True).stdout.strip()
+            style = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'KDE', '--key', 'widgetStyle'], capture_output=True, text=True).stdout.strip()
+            decor = subprocess.run(['kreadconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'library'], capture_output=True, text=True).stdout.strip()
+            decor_theme = subprocess.run(['kreadconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'theme'], capture_output=True, text=True).stdout.strip()
+            theme = subprocess.run(['kreadconfig6', '--file', 'plasmarc', '--group', 'Theme', '--key', 'name'], capture_output=True, text=True).stdout.strip()
+            colorscheme = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', 'ColorScheme'], capture_output=True, text=True).stdout.strip()
+
+            wm_keys = ['activeBackground', 'activeForeground', 'inactiveBackground', 'inactiveForeground']
+            for k in wm_keys:
+                val = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', k], capture_output=True, text=True).stdout.strip()
+                if val: settings[f'wm_{k}'] = val
+
+            with open(backup_file, 'w') as f:
+                f.write(f"icons={icons}\nstyle={style}\ndecor={decor}\ndecor_theme={decor_theme}\ntheme={theme}\ncolorscheme={colorscheme}\n")
+                for k, v in settings.items():
+                    f.write(f"{k}={v}\n")
+
+        # 4. Определяем цвета в зависимости от режима
+        if mode == "light":
+            new_theme = "breeze"
+            new_colorscheme = "BreezeLight"
+        elif mode == "dark":
+            new_theme = "breeze-dark"
+            new_colorscheme = "BreezeDark"
+        else:  # mixed
+            new_theme = "breeze-dark"
+            new_colorscheme = "BreezeLight"
+
+        # 5. Применяем настройки шрифтов
+        font_keys = ['font', 'menuFont', 'toolbarFont', 'taskbarFont', 'smallestReadableFont']
+        for k in font_keys:
+            val = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', k], capture_output=True, text=True).stdout.strip()
+            if val:
+                family = val.split(',')[0]
+                new_font = f"{family},10,-1,5,50,0,0,0,0,0"
+                subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', k, new_font])
+
+        active_font = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', 'activeFont'], capture_output=True, text=True).stdout.strip()
+        if active_font:
+            family = active_font.split(',')[0]
+            new_font = f"{family},10,-1,5,50,0,0,0,0,0"
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', 'activeFont', new_font])
+
+        # Удаляем жестко заданные цвета заголовков
+        wm_keys = ['activeBackground', 'activeForeground', 'inactiveBackground', 'inactiveForeground']
+        for k in wm_keys:
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', k, '--delete'])
+
+        # 6. Применяем иконки и темы
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'Icons', '--key', 'Theme', papirus_theme_name])
+        subprocess.run(['kwriteconfig6', '--file', 'plasmarc', '--group', 'Theme', '--key', 'name', new_theme])
+        subprocess.run(['kwriteconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'library', 'org.kde.breeze'])
+        subprocess.run(['kwriteconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'theme', 'Breeze'])
+
+        # Применяем цветовую схему
+        res = subprocess.run(['plasma-apply-colorscheme', new_colorscheme], capture_output=True)
+        if res.returncode != 0:
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', 'ColorScheme', new_colorscheme])
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'KDE', '--key', 'widgetStyle', 'Breeze'])
+
+        # 7. Очистка кэша и перезапуск
+        subprocess.run(['rm', '-f', os.path.expanduser('~/.cache/icon-cache.kcache')])
+        subprocess.run(['kbuildsycoca6', '--noincremental'], capture_output=True)
+        subprocess.run(['qdbus-qt6', 'org.kde.KWin', '/KWin', 'org.kde.KWin.reconfigure'], capture_output=True)
+        self.restart_plasmashell()
+
+        QMessageBox.information(self, "Готово", "Современный интерфейс применён.\nПанель перезапущена для обновления.")
+
+    def on_rollback_modern_ui(self):
+        config_dir = get_config_dir()
+        backup_file = os.path.join(config_dir, 'ui_backup.txt')
+
+        if not os.path.exists(backup_file):
+            QMessageBox.warning(self, "Нет данных", "Файл с предыдущими настройками не найден.\nОткатывать нечего.")
+            return
+
+        # 1. Читаем старые настройки
+        settings = {}
+        with open(backup_file, 'r') as f:
+            for line in f:
+                if '=' in line:
+                    k, v = line.strip().split('=', 1)
+                    settings[k] = v
+
+        # 2. Применяем обратно шрифты
+        font_keys = ['font', 'menuFont', 'toolbarFont', 'taskbarFont', 'smallestReadableFont']
+        for k in font_keys:
+            if k in settings:
+                subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', k, settings[k]])
+
+        if 'activeFont' in settings:
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', 'activeFont', settings['activeFont']])
+
+        # Восстанавливаем жестко заданные цвета заголовков (если были)
+        wm_keys = ['activeBackground', 'activeForeground', 'inactiveBackground', 'inactiveForeground']
+        for k in wm_keys:
+            if f'wm_{k}' in settings:
+                subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', k, settings[f'wm_{k}']])
+            else:
+                # Если в бэкапе нет, значит их не было, удаляем на всякий случай
+                subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', k, '--delete'])
+
+        # 3. Применяем остальные настройки
+        if settings.get('icons'):
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'Icons', '--key', 'Theme', settings['icons']])
+        if settings.get('style'):
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'KDE', '--key', 'widgetStyle', settings['style']])
+        if settings.get('decor'):
+            subprocess.run(['kwriteconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'library', settings['decor']])
+        if settings.get('decor_theme'):
+            subprocess.run(['kwriteconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'theme', settings['decor_theme']])
+        if settings.get('theme'):
+            subprocess.run(['kwriteconfig6', '--file', 'plasmarc', '--group', 'Theme', '--key', 'name', settings['theme']])
+
+        # Восстанавливаем цветовую схему
+        if settings.get('colorscheme'):
+            res = subprocess.run(['plasma-apply-colorscheme', settings['colorscheme']], capture_output=True)
+            if res.returncode != 0:
+                subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', 'ColorScheme', settings['colorscheme']])
+
+        # 4. Очищаем кэш иконок и пересобираем кэш KDE
+        subprocess.run(['rm', '-f', os.path.expanduser('~/.cache/icon-cache.kcache')])
+        subprocess.run(['kbuildsycoca6', '--noincremental'], capture_output=True)
+        subprocess.run(['qdbus-qt6', 'org.kde.KWin', '/KWin', 'org.kde.KWin.reconfigure'], capture_output=True)
+
+        # 5. Удаляем файл бэкапа, чтобы следующее применение сохранило новое состояние
+        if os.path.exists(backup_file):
+            os.remove(backup_file)
+
+        # 6. Перезапускаем плазму, чтобы всё применилось
+        self.restart_plasmashell()
+
+        QMessageBox.information(self, "Готово", "Предыдущие настройки интерфейса восстановлены.\nПанель была перезапущена.")
+
     def create_fixes_page(self):
         cards = []
         cards.append(SimpleActionCard("Установка кодека openh264 для Flatpak (без VPN)", "Устанавливает кодек openh264 для Flatpak через stplr, для этого VPN не нужен.", "21_install_openh264_action.sh"))
@@ -1581,25 +1919,53 @@ class MainWindow(QMainWindow):
 
         title_widget = QWidget()
         title_layout = QHBoxLayout()
-        title_layout.setContentsMargins(0, 10, 0, 5)
-        title_label = QLabel("<b>Текущее обслуживание системы</b>")
+        title_layout.setContentsMargins(12, 10, 12, 5)
+
+        title_label = QLabel("<b>Регулярное обслуживание системы</b>")
         title_label.setStyleSheet("font-size: 14px; color: palette(text);")
         title_layout.addWidget(title_label)
-        title_layout.addStretch()
+
+        # Отступ 5 пикселей и чекбокс
+        title_layout.addSpacing(5)
+
+        self.maint_master_cb = QCheckBox()
+        self.maint_master_cb.setTristate(True)
+        self.maint_master_cb.setToolTip("Выбрать / отменить все три действия ниже")
+        title_layout.addWidget(self.maint_master_cb)
+
+        title_layout.addStretch() # Распорка прижимает всё влево
+
         title_widget.setLayout(title_layout)
         cards.append(title_widget)
 
-        cards.append(SimpleActionCard("Обновление системы и программ из всех источников", "Будет обновлена система из репозитория (rpm-пакеты),\nа также обновятся и другие установленные в системе источники\nи программы из них.", "05_update_system_action.sh"))
-        cards.append(SimpleActionCard("Очистка кэша", "Очистка кэшей: в домашнем каталоге, для Flatpak-приложений,\nаккуратную очистку системного кэша, удаление старых журналов\nи сжатие до размера 100 МБ максимум, очистку кэша пакетов\n(без применения небезопасной опции autoremove),\nудаление неиспользуемых рантаймов Flatpak,\nудаление старых ядер.", "95_clean_cache_action.sh"))
+        card_update_sys = SimpleActionCard(
+            "Обновление системы и программ из всех источников",
+            "Будет обновлена система из репозитория (rpm-пакеты),\nа также обновятся и другие установленные в системе источники\nи программы из них.",
+            "05_update_system_action.sh"
+        )
+        cards.append(card_update_sys)
 
-        cards.append(SimpleActionCard(
+        card_clean_cache = SimpleActionCard(
+            "Очистка кэша",
+            "Очистка кэшей: в домашнем каталоге, для Flatpak-приложений,\nаккуратную очистку системного кэша, удаление старых журналов\nи сжатие до размера 100 МБ максимум, очистку кэша пакетов\n(без применения небезопасной опции autoremove),\nудаление неиспользуемых рантаймов Flatpak,\nудаление старых ядер.",
+            "95_clean_cache_action.sh"
+        )
+        cards.append(card_clean_cache)
+
+        card_clean_orphan = SimpleActionCard(
             "Очистка данных удалённых Flatpak-приложений",
             "Находит в ~/.var/app папки приложений Flatpak, которых больше нет в системе.\n"
             "Показывает список с именами и спрашивает подтверждение.\n"
             "Папки перемещаются в корзину, откуда их можно восстановить,\n"
             "если приложение понадобится снова.",
             "96_clean_orphan_flatpak_data_action.sh"
-        ))
+        )
+        cards.append(card_clean_orphan)
+
+        self.maint_target_cards = [card_update_sys, card_clean_cache, card_clean_orphan]
+        for c in self.maint_target_cards:
+            c.install_cb.stateChanged.connect(self.update_maint_master_state)
+        self.maint_master_cb.clicked.connect(self.on_maint_master_clicked)
 
         return CategoryPage(cards)
 
