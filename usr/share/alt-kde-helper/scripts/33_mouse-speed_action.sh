@@ -119,7 +119,7 @@ fi
 } >> "$KGLOBAL_FILE"
 
 # Перезапускаем kglobalaccel, чтобы применить изменения
-systemctl --user restart kglobalaccel 2>/dev/null || true
+systemctl --user restart plasma-kglobalaccel.service 2>/dev/null || true
 
 echo -e "\033[1;33m→ Привязка кнопки 'Вперёд' (ExtraButton2) к сочетанию клавиш...\033[0m"
 kwriteconfig6 --file kcminputrc --group "ButtonRebinds" --group "Mouse" --key "ExtraButton2" "Key,$HOTKEY"

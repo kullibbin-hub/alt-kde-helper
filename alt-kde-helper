@@ -1,8 +1,13 @@
 #!/bin/bash
-# Скрипт запуска программы с проверкой sudo
+# Скрипт запуска программы с проверкой прав администратора и sudo
 
 PROG_DIR="/opt/alt-kde-helper/usr/share/alt-kde-helper"
 CHECK_SUDO_SCRIPT="$PROG_DIR/scripts/check_sudo.sh"
+
+# Функция проверки принадлежности пользователя к группе wheel
+is_admin() {
+    id -nG "$USER" 2>/dev/null | grep -qw "wheel"
+}
 
 # Функция проверки, настроен ли sudo
 # Возвращает 0 если sudo НЕ настроен, 1 если настроен
@@ -21,7 +26,13 @@ run_main() {
     exec -a alt-kde-helper python3 main.py "$@"
 }
 
-# Основная логика
+# 1. Сначала проверяем, является ли пользователь администратором (входит в wheel)
+if ! is_admin; then
+    kdialog --error "Вы не являетесь администратором системы (не входите в группу wheel).\n\nБольшинство функций программы требуют прав администратора.\nОбратитесь к администратору компьютера." --title "Доступ запрещён"
+    exit 1
+fi
+
+# 2. Если администратор, проверяем, настроен ли для него sudo
 if is_sudo_not_configured; then
     # sudo не настроен, спрашиваем
     if ask_setup_sudo; then
