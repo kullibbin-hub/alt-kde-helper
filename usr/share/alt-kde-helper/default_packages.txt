@@ -62,7 +62,7 @@ git                      # система контроля версий
 
 # Иконки и темы
 icon-theme-Papirus       # набор иконок Papirus
-icon-theme-Papirus-Dark  № набор иконок Papirus для темной темы
+icon-theme-Papirus-Dark  # набор иконок Papirus для темной темы
 xdg-desktop-portal-gtk   # пакет для правильной поддержки libadwaita в KDE
 
 # Интеграция с облачными сервисами
