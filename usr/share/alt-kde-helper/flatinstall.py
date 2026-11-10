@@ -114,8 +114,8 @@ class FlatpakInstallPage(QWidget):
         layout.addWidget(src_title)
 
         src_layout = QVBoxLayout()
-        self.radio_file = QRadioButton("Из списка для установки (.sh)")
-        self.radio_popular = QRadioButton("Из списка популярных программ (встроенный)")
+        self.radio_file = QRadioButton("Из списка для установки (.sh), онлайн")
+        self.radio_popular = QRadioButton("Из списка популярных программ (встроенный список), онлайн")
         self.radio_archive_data = QRadioButton("Из архива — восстановить данные приложений")
         self.radio_archive_full = QRadioButton("Из архива — полное восстановление (все программы + данные, без выбора)")
         self.radio_file.setChecked(True)

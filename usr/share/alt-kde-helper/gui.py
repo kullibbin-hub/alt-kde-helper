@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QMenu, QRadioButton, QFileDialog
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent, QSize
-from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction
+from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction, QPixmap
 from config import (
     get_stylesheet, get_scripts_dir, get_state_dir, get_actions_dir,
     clear_actions_dir, get_help_path, get_version,
@@ -747,19 +747,19 @@ class AppearancePage(QWidget):
         self.btn_modern_light = QPushButton("Светлая панель и светлые окна")
         self.btn_modern_light.setProperty("class", "BottomButton")
         self.btn_modern_light.setMinimumHeight(40)
-        self.btn_modern_light.setToolTip("Применяет современные настройки: светлая панель, светлые окна, шрифт 10, Papirus.")
+        self.btn_modern_light.setToolTip("Применяет современные настройки: Breeze, светлая панель, светлые окна, шрифт 10, Papirus.")
         content_layout.addWidget(self.btn_modern_light)
 
         self.btn_modern_mixed = QPushButton("Тёмная панель и светлые окна")
         self.btn_modern_mixed.setProperty("class", "BottomButton")
         self.btn_modern_mixed.setMinimumHeight(40)
-        self.btn_modern_mixed.setToolTip("Применяет современные настройки: тёмная панель, светлые окна, шрифт 10, Papirus.")
+        self.btn_modern_mixed.setToolTip("Применяет современные настройки: Breeze, тёмная панель, светлые окна, шрифт 10, Papirus.")
         content_layout.addWidget(self.btn_modern_mixed)
 
         self.btn_modern_dark = QPushButton("Тёмная панель и тёмные окна")
         self.btn_modern_dark.setProperty("class", "BottomButton")
         self.btn_modern_dark.setMinimumHeight(40)
-        self.btn_modern_dark.setToolTip("Применяет современные настройки: тёмная панель, тёмные окна, шрифт 10, Papirus.")
+        self.btn_modern_dark.setToolTip("Применяет современные настройки: Breeze, тёмная панель, тёмные окна, шрифт 10, Papirus.")
         content_layout.addWidget(self.btn_modern_dark)
 
         self.btn_rollback_ui = QPushButton("Вернуть предыдущий интерфейс")
@@ -1138,6 +1138,12 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         menu.addAction(about_action)
 
+        # --- Новый пункт ---
+        donate_action = QAction("Поддержать разработчика", self)
+        donate_action.triggered.connect(self.show_donate_dialog)
+        menu.addAction(donate_action)
+        # -------------------
+
         menu.addSeparator()
 
         theme_action = QAction("Тёмная тема", self)
@@ -1435,7 +1441,65 @@ class MainWindow(QMainWindow):
             "ALT Linux 11 с рабочим столом KDE6<br><br>"
             "Автор: kullibbin<br>"
             "<a href='mailto:kullibbin@gmail.com'>kullibbin@gmail.com</a><br><br>"
+            "<a href='https://t.me/Alt_KDE_Helper'>Telegram-канал</a> (новости и поддержка)<br><br>"  # <--- Вот здесь добавлен <br>
             "<a href='https://github.com/kullibbin-hub/alt-kde-helper'>GitHub</a>")
+
+    def show_donate_dialog(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Поддержать разработчика")
+        dialog.setMinimumWidth(400)
+
+        layout = QVBoxLayout()
+        layout.setSpacing(10)
+
+        title = QLabel("<b>Спасибо, что пользуетесь Alt KDE Helper!</b>")
+        title.setStyleSheet("font-size: 14px;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+
+        text = QLabel(
+            "Если программа сэкономила вам время и сделала систему удобнее,     \n"
+            "вы можете поддержать автора донатом.\n"
+            "Это помогает выделять время на тестирование,\n"
+            "исправление багов и разработку новых функций."
+        )
+        text.setWordWrap(True)
+        text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(text)
+
+        layout.addSpacing(10)
+
+        # Путь к картинке с QR-кодом
+        qr_path = '/opt/alt-kde-helper/usr/share/alt-kde-helper/donate_qr.png'
+
+        if os.path.exists(qr_path):
+            pixmap = QPixmap(qr_path)
+            # Если картинка слишком большая, уменьшаем её до 250x250
+            if pixmap.width() > 250:
+                pixmap = pixmap.scaled(250, 250, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            qr_label = QLabel()
+            qr_label.setPixmap(pixmap)
+            qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(qr_label)
+
+            qr_hint = QLabel("Отсканируйте QR-код в приложении вашего банка (СБП)")
+            qr_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            # Убрали setStyleSheet, теперь цвет обычный (palette(text))
+            layout.addWidget(qr_hint)
+        else:
+            # Если картинки нет, выводим заглушку
+            fallback = QLabel("<i>(QR-код временно недоступен)</i>")
+            fallback.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(fallback)
+
+        layout.addSpacing(15)
+
+        close_btn = QPushButton("Закрыть")
+        close_btn.clicked.connect(dialog.accept)
+        layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignRight)
+
+        dialog.setLayout(layout)
+        dialog.exec()
 
     def check_updates_background(self):
         import urllib.request, json, subprocess
@@ -1645,15 +1709,31 @@ class MainWindow(QMainWindow):
             os.path.expanduser("~/.icons")
         ]
 
+        # Выбираем нужный вариант иконок в зависимости от режима
+        target_icon_name = "Papirus-Dark" if mode == "dark" else "Papirus"
+        target_icon_lower = target_icon_name.lower()
+
         papirus_theme_name = None
+        # Сначала ищем точное совпадение с нужным вариантом
         for d in icon_dirs:
             if os.path.exists(d):
                 for item in os.listdir(d):
-                    if 'papirus' in item.lower() and os.path.isdir(os.path.join(d, item)):
+                    if os.path.isdir(os.path.join(d, item)) and item.lower() == target_icon_lower:
                         papirus_theme_name = item
                         break
             if papirus_theme_name:
                 break
+
+        # Если точного совпадения нет, делаем запасной вариант (ищем любой Papirus)
+        if not papirus_theme_name:
+            for d in icon_dirs:
+                if os.path.exists(d):
+                    for item in os.listdir(d):
+                        if 'papirus' in item.lower() and os.path.isdir(os.path.join(d, item)):
+                            papirus_theme_name = item
+                            break
+                if papirus_theme_name:
+                    break
 
         # 2. Установка иконок при необходимости
         if not papirus_theme_name:
@@ -1688,15 +1768,26 @@ class MainWindow(QMainWindow):
             finally:
                 BUSY.release()
 
-            # Проверяем еще раз
+            # Проверяем еще раз после установки (с учетом нужного варианта)
             for d in icon_dirs:
                 if os.path.exists(d):
                     for item in os.listdir(d):
-                        if 'papirus' in item.lower() and os.path.isdir(os.path.join(d, item)):
+                        if os.path.isdir(os.path.join(d, item)) and item.lower() == target_icon_lower:
                             papirus_theme_name = item
                             break
                 if papirus_theme_name:
                     break
+
+            # Если нужного варианта нет, ищем хоть какой-то Papirus
+            if not papirus_theme_name:
+                for d in icon_dirs:
+                    if os.path.exists(d):
+                        for item in os.listdir(d):
+                            if 'papirus' in item.lower() and os.path.isdir(os.path.join(d, item)):
+                                papirus_theme_name = item
+                                break
+                    if papirus_theme_name:
+                        break
 
             if not papirus_theme_name:
                 QMessageBox.critical(self, "Ошибка",
