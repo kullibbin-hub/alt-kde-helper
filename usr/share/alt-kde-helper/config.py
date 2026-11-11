@@ -73,6 +73,10 @@ QMainWindow {{
     background-color: palette(window);
 }}
 
+QWidget#LeftPanel {{
+    background-color: palette(base);
+}}
+
 QFrame[class="ActionCard"],
 QFrame[class="SimpleActionCard"],
 QFrame[class="MirrorCard"] {{
@@ -113,6 +117,13 @@ QPushButton[class="BottomButton"] {{
     padding: 8px 16px;
     font-weight: bold;
     min-width: 120px;
+}}
+
+QPushButton[class="BottomButton"][active="true"] {{
+    color: #27ae60;
+    background-color: palette(button);
+    border: 2px solid #27ae60;
+    border-radius: 4px;
 }}
 
 QPushButton[class="TabButton"] {{

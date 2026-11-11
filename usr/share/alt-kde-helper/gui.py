@@ -16,8 +16,7 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent, QSize
 from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction, QPixmap
 from config import (
     get_stylesheet, get_scripts_dir, get_state_dir, get_actions_dir,
-    clear_actions_dir, get_help_path, get_version,
-    load_theme_setting, save_theme_setting, is_dark_theme
+    clear_actions_dir, get_help_path, get_version
 )
 from flatbackup import FlatpakBackupPage
 from flatinstall import FlatpakInstallPage
@@ -744,29 +743,59 @@ class AppearancePage(QWidget):
         # --- Блок 2: Современный интерфейс ---
         content_layout.addSpacing(10)
 
+        # 1. Кнопки цветов
         self.btn_modern_light = QPushButton("Светлая панель и светлые окна")
         self.btn_modern_light.setProperty("class", "BottomButton")
         self.btn_modern_light.setMinimumHeight(40)
-        self.btn_modern_light.setToolTip("Применяет современные настройки: Breeze, светлая панель, светлые окна, шрифт 10, Papirus.")
+        self.btn_modern_light.setToolTip("Применяет светлые цвета, тему Breeze и иконки Papirus.")
         content_layout.addWidget(self.btn_modern_light)
 
         self.btn_modern_mixed = QPushButton("Тёмная панель и светлые окна")
         self.btn_modern_mixed.setProperty("class", "BottomButton")
         self.btn_modern_mixed.setMinimumHeight(40)
-        self.btn_modern_mixed.setToolTip("Применяет современные настройки: Breeze, тёмная панель, светлые окна, шрифт 10, Papirus.")
+        self.btn_modern_mixed.setToolTip("Применяет тёмную панель, светлые окна, тему Breeze и иконки Papirus.")
         content_layout.addWidget(self.btn_modern_mixed)
 
         self.btn_modern_dark = QPushButton("Тёмная панель и тёмные окна")
         self.btn_modern_dark.setProperty("class", "BottomButton")
         self.btn_modern_dark.setMinimumHeight(40)
-        self.btn_modern_dark.setToolTip("Применяет современные настройки: Breeze, тёмная панель, тёмные окна, шрифт 10, Papirus.")
+        self.btn_modern_dark.setToolTip("Применяет тёмные цвета, тему Breeze и иконки Papirus.")
         content_layout.addWidget(self.btn_modern_dark)
 
-        self.btn_rollback_ui = QPushButton("Вернуть предыдущий интерфейс")
-        self.btn_rollback_ui.setProperty("class", "BottomButton")
-        self.btn_rollback_ui.setMinimumHeight(40)
-        self.btn_rollback_ui.setToolTip("Возвращает настройки, которые были до первого нажатия на одну из кнопок выше.")
-        content_layout.addWidget(self.btn_rollback_ui)
+        content_layout.addSpacing(10)
+
+        # 2. Ряд с кнопками иконок
+        icons_btn_layout = QHBoxLayout()
+        icons_btn_layout.setSpacing(5)
+
+        self.btn_icons_breeze = QPushButton("Значки Breeze")
+        self.btn_icons_breeze.setProperty("class", "BottomButton")
+        self.btn_icons_breeze.setMinimumHeight(40)
+        self.btn_icons_breeze.setToolTip("Применяет стандартные иконки Breeze.")
+        icons_btn_layout.addWidget(self.btn_icons_breeze)
+
+        self.btn_icons_alt = QPushButton("Значки ALT Linux")
+        self.btn_icons_alt.setProperty("class", "BottomButton")
+        self.btn_icons_alt.setMinimumHeight(40)
+        self.btn_icons_alt.setToolTip("Применяет иконки от ALT Linux.")
+        icons_btn_layout.addWidget(self.btn_icons_alt)
+
+        self.btn_icons_papirus = QPushButton("Значки Papirus")
+        self.btn_icons_papirus.setProperty("class", "BottomButton")
+        self.btn_icons_papirus.setMinimumHeight(40)
+        self.btn_icons_papirus.setToolTip("Применяет современные иконки Papirus.")
+        icons_btn_layout.addWidget(self.btn_icons_papirus)
+
+        content_layout.addLayout(icons_btn_layout)
+
+        content_layout.addSpacing(10)
+
+        # 3. Кнопка сброса
+        self.btn_reset_ui = QPushButton("Вернуть настройки тем по умолчанию")
+        self.btn_reset_ui.setProperty("class", "BottomButton")
+        self.btn_reset_ui.setMinimumHeight(40)
+        self.btn_reset_ui.setToolTip("Сбрасывает цвета, тему интерфейса и иконки к стандартным для ALT Linux (BreezeClassic).")
+        content_layout.addWidget(self.btn_reset_ui)
 
         # --- Визуальный разделитель 2 ---
         content_layout.addSpacing(15)
@@ -782,13 +811,12 @@ class AppearancePage(QWidget):
         extra_title.setStyleSheet("font-size: 16px; margin-bottom: 10px;")
         content_layout.addWidget(extra_title)
 
-        # Список карточек для этой страницы (чтобы MainWindow мог их найти)
         self.cards = []
 
-        # 1. Значки Papirus
+        # 1. Значки Papirus (remix)
         card_papirus = SimpleActionCard(
-            "Установка цветных значков papirus",
-            "Будут установлены значки papirus-remix-icon-theme с разными цветами папок.\nУстановка может занимать несколько минут, из-за большого количества маленьких файлов,\nнаберитесь терпения.",
+            "Установка цветных значков Papirus-Remix",
+            "Будут установлены значки Papirus-Remix с разными цветами папок.\nУстановка может занимать несколько минут, из-за большого количества маленьких файлов,\nнаберитесь терпения.",
             "18_install_papirus_icons_action.sh"
         )
         self.cards.append(card_papirus)
@@ -806,7 +834,7 @@ class AppearancePage(QWidget):
         # 3. Размер шрифта
         card_font = ActionCard(
             "Размер шрифта 10",
-            "Устанавливает базовый размер шрифта — 10",
+            "Устанавливает базовый размер шрифта — 10.\n\nПри нажатии кнопки «Откат» шрифт вернется к стандартному размеру 9.",
             "13_increase_fonts_action.sh",
             "13_increase_fonts_rollback.sh"
         )
@@ -839,12 +867,7 @@ class MainWindow(QMainWindow):
 
         left_panel = QWidget()
         left_panel.setFixedWidth(180)
-        left_panel.setAutoFillBackground(True)
-
-        from PyQt6.QtGui import QPalette
-        pal = left_panel.palette()
-        pal.setColor(QPalette.ColorRole.Window, pal.color(QPalette.ColorRole.Base))
-        left_panel.setPalette(pal)
+        left_panel.setObjectName("LeftPanel")
 
         left_panel_layout = QVBoxLayout()
         left_panel_layout.setContentsMargins(0, 0, 0, 0)
@@ -870,10 +893,6 @@ class MainWindow(QMainWindow):
 
         menu_container = QWidget()
         menu_container.setContentsMargins(0, 0, 0, 0)
-        menu_container.setAutoFillBackground(True)
-        palette = menu_container.palette()
-        palette.setColor(menu_container.backgroundRole(), palette.color(QPalette.ColorRole.Window))
-        menu_container.setPalette(palette)
 
         menu_layout = QHBoxLayout()
         menu_layout.setContentsMargins(2, 2, 2, 2)
@@ -995,7 +1014,10 @@ class MainWindow(QMainWindow):
         self.appearance_page.btn_modern_light.clicked.connect(lambda: self.on_apply_modern_ui("light"))
         self.appearance_page.btn_modern_mixed.clicked.connect(lambda: self.on_apply_modern_ui("mixed"))
         self.appearance_page.btn_modern_dark.clicked.connect(lambda: self.on_apply_modern_ui("dark"))
-        self.appearance_page.btn_rollback_ui.clicked.connect(self.on_rollback_modern_ui)
+        self.appearance_page.btn_icons_breeze.clicked.connect(self.on_apply_breeze_icons)
+        self.appearance_page.btn_icons_alt.clicked.connect(self.on_apply_alt_icons)
+        self.appearance_page.btn_icons_papirus.clicked.connect(self.on_apply_papirus_icons)
+        self.appearance_page.btn_reset_ui.clicked.connect(self.on_reset_to_default)
 
         self.flatpak_backup_page = FlatpakBackupPage()
         self.flatpak_install_page = FlatpakInstallPage()
@@ -1088,21 +1110,12 @@ class MainWindow(QMainWindow):
         self.recommended_btn.setEnabled(not busy)
 
     def showEvent(self, event):
-        """Переприменяем стили при первом показе окна"""
         super().showEvent(event)
-        saved = load_theme_setting()
-        if saved is not None:
-            QApplication.instance().setStyleSheet(get_stylesheet(force_dark=saved))
-        else:
-            QApplication.instance().setStyleSheet(get_stylesheet())
+        QApplication.instance().setStyleSheet(get_stylesheet())
 
     def event(self, event):
         if event.type() == QEvent.Type.ApplicationPaletteChange:
-            saved = load_theme_setting()
-            if saved is not None:
-                QApplication.instance().setStyleSheet(get_stylesheet(force_dark=saved))
-            else:
-                QApplication.instance().setStyleSheet(get_stylesheet())
+            QApplication.instance().setStyleSheet(get_stylesheet())
             return True
         return super().event(event)
 
@@ -1144,24 +1157,7 @@ class MainWindow(QMainWindow):
         menu.addAction(donate_action)
         # -------------------
 
-        menu.addSeparator()
-
-        theme_action = QAction("Тёмная тема", self)
-        theme_action.setCheckable(True)
-        saved = load_theme_setting()
-        if saved is None:
-            theme_action.setChecked(is_dark_theme())
-        else:
-            theme_action.setChecked(saved)
-        theme_action.triggered.connect(self.toggle_theme)
-        menu.addAction(theme_action)
-
         menu.exec(self.menu_button.mapToGlobal(QPoint(0, self.menu_button.height())))
-
-    def toggle_theme(self, checked):
-        """Переключает тему (checked = True — тёмная, False — светлая)"""
-        save_theme_setting(checked)
-        QApplication.instance().setStyleSheet(get_stylesheet(force_dark=checked))
 
     def on_disable_sudo(self):
         reply = QMessageBox.warning(self, "Отключение sudo",
@@ -1217,6 +1213,8 @@ class MainWindow(QMainWindow):
         self.recommended_btn.setVisible(show_bottom)
         self.apply_btn.setVisible(show_bottom)
         self.bottom_line.setVisible(show_bottom)
+        if index == 2:
+            self.update_theme_checkmarks()
 
     def get_all_cards(self):
         cards = []
@@ -1700,6 +1698,282 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось сбросить настройки:\n{e}")
 
+    def _is_dark_windows(self):
+        """Проверяет, темные ли сейчас окна (для выбора правильных иконок)."""
+        colorscheme = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', 'ColorScheme'], capture_output=True, text=True).stdout.strip().lower()
+        return "dark" in colorscheme
+
+    def _refresh_icons(self):
+        """Очищает кэш иконок и перезапускает плазму."""
+        subprocess.run(['rm', '-f', os.path.expanduser('~/.cache/icon-cache.kcache')])
+        subprocess.run(['kbuildsycoca6', '--noincremental'], capture_output=True)
+        subprocess.run(['qdbus-qt6', 'org.kde.KWin', '/KWin', 'org.kde.KWin.reconfigure'], capture_output=True)
+        self.restart_plasmashell()
+
+    def _kread(self, file, group, key):
+        """Читает одну настройку KDE. Возвращает строку (пустую при ошибке)."""
+        try:
+            r = subprocess.run(
+                ['kreadconfig6', '--file', file, '--group', group, '--key', key],
+                capture_output=True, text=True, timeout=5
+            )
+            return r.stdout.strip() if r.returncode == 0 else ""
+        except Exception:
+            return ""
+
+
+    def update_theme_checkmarks(self):
+        if not hasattr(self.appearance_page, 'btn_modern_light'):
+            return
+
+        # 1. Читаем текущее состояние системы
+        icons        = self._kread('kdeglobals', 'Icons',   'Theme').lower()
+        colorscheme  = self._kread('kdeglobals', 'General', 'ColorScheme').lower()
+        theme        = self._kread('plasmarc',   'Theme',   'name').lower()
+        widget_style = self._kread('kdeglobals', 'KDE',     'widgetStyle').lower()
+
+        is_breeze_ui = (widget_style == 'breeze')
+        is_light_win = colorscheme in ('breezelight', 'breeze')
+        is_dark_win  = (colorscheme == 'breezedark')
+
+        # 2. Условия для кнопок цвета.
+        #    Если theme == 'default' — ни одна кнопка цвета не загорится (это правильно).
+        light_active = (theme == 'breeze')      and is_light_win and is_breeze_ui
+        mixed_active = (theme == 'breeze-dark') and is_light_win and is_breeze_ui
+        dark_active  = (theme == 'breeze-dark') and is_dark_win  and is_breeze_ui
+
+        # 3. Условия для кнопок иконок (breeze-dark и altos-dark тоже засчитываются)
+        is_breeze_icon = 'breeze'  in icons
+        is_alt_icon    = 'altos'   in icons
+        is_papirus_icon = 'papirus' in icons
+
+        # 4. Условие для сброса — строгое (иконки именно breeze, не breeze-dark)
+        is_default = (theme == 'default'
+                    and colorscheme == 'breezeclassic'
+                    and icons == 'breeze')
+
+        # 5. Функция оформления кнопки
+        def set_active(btn, text, active):
+            if active:
+                btn.setText('✓ ' + text)
+                btn.setProperty("active", "true")
+            else:
+                btn.setText(text)
+                btn.setProperty("active", "false")
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
+
+        # 6. Применяем к каждой кнопке
+        set_active(self.appearance_page.btn_modern_light,
+                'Светлая панель и светлые окна', light_active)
+        set_active(self.appearance_page.btn_modern_mixed,
+                'Тёмная панель и светлые окна', mixed_active)
+        set_active(self.appearance_page.btn_modern_dark,
+                'Тёмная панель и тёмные окна', dark_active)
+
+        set_active(self.appearance_page.btn_icons_breeze,
+                'Значки Breeze', is_breeze_icon)
+        set_active(self.appearance_page.btn_icons_alt,
+                'Значки ALT Linux', is_alt_icon)
+        set_active(self.appearance_page.btn_icons_papirus,
+                'Значки Papirus', is_papirus_icon)
+
+        set_active(self.appearance_page.btn_reset_ui,
+                'Вернуть настройки тем по умолчанию', is_default)
+
+
+
+    def on_apply_breeze_icons(self):
+        is_dark = self._is_dark_windows()
+        icon_name = "breeze-dark" if is_dark else "breeze"
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'Icons', '--key', 'Theme', icon_name])
+        self._refresh_icons()
+        self.update_theme_checkmarks()
+
+    def on_apply_alt_icons(self):
+        res = subprocess.run(['rpm', '-q', 'icon-theme-altos'], capture_output=True)
+        if res.returncode != 0:
+            reply = QMessageBox.question(self, "Иконки ALT не найдены", "Установить пакет icon-theme-altos?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if reply != QMessageBox.StandardButton.Yes: return
+            BUSY.acquire()
+            try:
+                cmd = (
+                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
+                    'echo -e "\\033[1;36mУстановка иконок ALT Linux\\033[0m"\n'
+                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
+                    '\n'
+                    'echo -e "\\033[1;33m→ Обновление списка пакетов...\\033[0m"\n'
+                    'sudo apt-get update\n'
+                    'if [ $? -ne 0 ]; then\n'
+                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось обновить список пакетов\\033[0m"\n'
+                    '    echo ""\n'
+                    '    echo "Нажмите любую клавишу для выхода..."\n'
+                    '    read -n 1\n'
+                    '    exit 1\n'
+                    'fi\n'
+                    '\n'
+                    'echo -e "\\033[1;33m→ Установка icon-theme-altos...\\033[0m"\n'
+                    'sudo apt-get install -y icon-theme-altos\n'
+                    'if [ $? -ne 0 ]; then\n'
+                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось установить icon-theme-altos\\033[0m"\n'
+                    '    echo ""\n'
+                    '    echo "Нажмите любую клавишу для выхода..."\n'
+                    '    read -n 1\n'
+                    '    exit 1\n'
+                    'fi\n'
+                    '\n'
+                    'echo -e "\\033[1;32m✅ Иконки ALT Linux успешно установлены\\033[0m"\n'
+                    'echo ""\n'
+                    'echo "Нажмите любую клавишу для выхода..."\n'
+                    'read -n 1\n'
+                )
+                subprocess.Popen(['konsole', '--separate', '--title', 'Установка иконок ALT', '-e', 'bash', '-c', cmd]).wait()
+                if subprocess.run(['rpm', '-q', 'icon-theme-altos'], capture_output=True).returncode != 0:
+                    QMessageBox.critical(self, "Ошибка", "Не удалось установить пакет. Применение отменено.")
+                    return
+            finally:
+                BUSY.release()
+
+        is_dark = self._is_dark_windows()
+        target_icon = "altos-dark" if is_dark else "altos"
+        new_icons = target_icon
+
+        # Проверяем точное имя папки
+        for d in ["/usr/share/icons", "/usr/local/share/icons", os.path.expanduser("~/.local/share/icons")]:
+            if os.path.exists(d):
+                for item in os.listdir(d):
+                    if item.lower() == target_icon.lower(): new_icons = item
+                    elif 'altos' in item.lower() and not new_icons: new_icons = item
+
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'Icons', '--key', 'Theme', new_icons])
+        self._refresh_icons()
+        self.update_theme_checkmarks()
+
+    def on_apply_papirus_icons(self):
+        is_dark = self._is_dark_windows()
+        target_icon = "Papirus-Dark" if is_dark else "Papirus"
+        papirus_theme_name = None
+        icon_dirs = ["/usr/share/icons", "/usr/local/share/icons", os.path.expanduser("~/.local/share/icons"), os.path.expanduser("~/.icons")]
+
+        for d in icon_dirs:
+            if os.path.exists(d):
+                for item in os.listdir(d):
+                    if os.path.isdir(os.path.join(d, item)) and item.lower() == target_icon.lower():
+                        papirus_theme_name = item
+                        break
+            if papirus_theme_name: break
+
+        if not papirus_theme_name:
+            for d in icon_dirs:
+                if os.path.exists(d):
+                    for item in os.listdir(d):
+                        if 'papirus' in item.lower() and os.path.isdir(os.path.join(d, item)):
+                            papirus_theme_name = item
+                            break
+                if papirus_theme_name: break
+
+        if not papirus_theme_name:
+            reply = QMessageBox.question(self, "Иконки не найдены", "Установить иконки Papirus?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if reply != QMessageBox.StandardButton.Yes: return
+            BUSY.acquire()
+            try:
+                cmd = (
+                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
+                    'echo -e "\\033[1;36mУстановка иконок Papirus\\033[0m"\n'
+                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
+                    '\n'
+                    'echo -e "\\033[1;33m→ Обновление списка пакетов...\\033[0m"\n'
+                    'sudo apt-get update\n'
+                    'if [ $? -ne 0 ]; then\n'
+                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось обновить список пакетов\\033[0m"\n'
+                    '    echo ""\n'
+                    '    echo "Нажмите любую клавишу для выхода..."\n'
+                    '    read -n 1\n'
+                    '    exit 1\n'
+                    'fi\n'
+                    '\n'
+                    'echo -e "\\033[1;33m→ Установка icon-theme-Papirus и icon-theme-Papirus-Dark...\\033[0m"\n'
+                    'sudo apt-get install -y icon-theme-Papirus icon-theme-Papirus-Dark\n'
+                    'if [ $? -ne 0 ]; then\n'
+                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось установить иконки Papirus\\033[0m"\n'
+                    '    echo ""\n'
+                    '    echo "Нажмите любую клавишу для выхода..."\n'
+                    '    read -n 1\n'
+                    '    exit 1\n'
+                    'fi\n'
+                    '\n'
+                    'echo -e "\\033[1;32m✅ Иконки Papirus успешно установлены\\033[0m"\n'
+                    'echo ""\n'
+                    'echo "Нажмите любую клавишу для выхода..."\n'
+                    'read -n 1\n'
+                )
+                subprocess.Popen(['konsole', '--separate', '--title', 'Установка иконок Papirus', '-e', 'bash', '-c', cmd]).wait()
+            finally:
+                BUSY.release()
+            for d in icon_dirs:
+                if os.path.exists(d):
+                    for item in os.listdir(d):
+                        if os.path.isdir(os.path.join(d, item)) and item.lower() == target_icon.lower():
+                            papirus_theme_name = item
+                            break
+                if papirus_theme_name: break
+            if not papirus_theme_name:
+                QMessageBox.critical(self, "Ошибка", "Иконки Papirus не были установлены.\nПрименение отменено.")
+                return
+
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'Icons', '--key', 'Theme', papirus_theme_name])
+        self._refresh_icons()
+        self.update_theme_checkmarks()
+
+    def on_reset_to_default(self):
+        # 1. Удаляем ColorScheme, чтобы plasma-apply-colorscheme
+        #    не сказал "уже используется" и не пропустил запись цветов
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                        '--group', 'General', '--key', 'ColorScheme', '--delete'])
+
+        # 2. Применяем схему — физически перезапишет [Colors:*] в kdeglobals
+        res = subprocess.run(['plasma-apply-colorscheme', 'BreezeClassic'],
+                             capture_output=True)
+        if res.returncode != 0:
+            # fallback: хотя бы ключ запишем
+            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                            '--group', 'General', '--key', 'ColorScheme',
+                            'BreezeClassic'])
+
+        # 3. Всё ниже — ПОСЛЕ plasma-apply-colorscheme
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                        '--group', 'Icons', '--key', 'Theme', 'breeze'])
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                        '--group', 'KDE', '--key', 'widgetStyle', 'Breeze'])
+        subprocess.run(['kwriteconfig6', '--file', 'plasmarc',
+                        '--group', 'Theme', '--key', 'name', 'default'])
+        subprocess.run(['kwriteconfig6', '--file', 'kwinrc',
+                        '--group', 'org.kde.kdecoration2', '--key', 'library',
+                        'org.kde.breeze'])
+        subprocess.run(['kwriteconfig6', '--file', 'kwinrc',
+                        '--group', 'org.kde.kdecoration2', '--key', 'theme',
+                        'Breeze'])
+
+        # 4. WM-цвета — эталонные значения из свежего профиля.
+        #    После plasma-apply-colorscheme, потому что он пишет [WM].
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                        '--group', 'WM', '--key', 'activeBackground', '71,80,87'])
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                        '--group', 'WM', '--key', 'activeForeground', '252,252,252'])
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                        '--group', 'WM', '--key', 'inactiveBackground', '239,240,241'])
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals',
+                        '--group', 'WM', '--key', 'inactiveForeground', '189,195,199'])
+
+        # 5. Кэш + рестарт плазмы
+        self._refresh_icons()
+
+        # 6. Обновить индикаторы на кнопках
+        self.update_theme_checkmarks()
+
+        # 7. BreezeClassic — светлые окна, программа тоже светлая
+        QApplication.instance().setStyleSheet(get_stylesheet(force_dark=False))
+
     def on_apply_modern_ui(self, mode="mixed"):
         # 1. Ищем иконки Papirus
         icon_dirs = [
@@ -1709,12 +1983,10 @@ class MainWindow(QMainWindow):
             os.path.expanduser("~/.icons")
         ]
 
-        # Выбираем нужный вариант иконок в зависимости от режима
         target_icon_name = "Papirus-Dark" if mode == "dark" else "Papirus"
         target_icon_lower = target_icon_name.lower()
 
         papirus_theme_name = None
-        # Сначала ищем точное совпадение с нужным вариантом
         for d in icon_dirs:
             if os.path.exists(d):
                 for item in os.listdir(d):
@@ -1724,7 +1996,6 @@ class MainWindow(QMainWindow):
             if papirus_theme_name:
                 break
 
-        # Если точного совпадения нет, делаем запасной вариант (ищем любой Papirus)
         if not papirus_theme_name:
             for d in icon_dirs:
                 if os.path.exists(d):
@@ -1752,13 +2023,30 @@ class MainWindow(QMainWindow):
                     'echo -e "\\033[1;36m========================================\\033[0m"\n'
                     'echo -e "\\033[1;36mУстановка иконок Papirus\\033[0m"\n'
                     'echo -e "\\033[1;36m========================================\\033[0m"\n'
+                    '\n'
                     'echo -e "\\033[1;33m→ Обновление списка пакетов...\\033[0m"\n'
                     'sudo apt-get update\n'
-                    'echo -e "\\033[1;33m→ Установка пакетов icon-theme-Papirus и icon-theme-Papirus-Dark...\\033[0m"\n'
+                    'if [ $? -ne 0 ]; then\n'
+                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось обновить список пакетов\\033[0m"\n'
+                    '    echo ""\n'
+                    '    echo "Нажмите любую клавишу для выхода..."\n'
+                    '    read -n 1\n'
+                    '    exit 1\n'
+                    'fi\n'
+                    '\n'
+                    'echo -e "\\033[1;33m→ Установка icon-theme-Papirus и icon-theme-Papirus-Dark...\\033[0m"\n'
                     'sudo apt-get install -y icon-theme-Papirus icon-theme-Papirus-Dark\n'
-                    'echo -e "\\033[1;32m✓ Установка завершена\\033[0m"\n'
+                    'if [ $? -ne 0 ]; then\n'
+                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось установить иконки Papirus\\033[0m"\n'
+                    '    echo ""\n'
+                    '    echo "Нажмите любую клавишу для выхода..."\n'
+                    '    read -n 1\n'
+                    '    exit 1\n'
+                    'fi\n'
+                    '\n'
+                    'echo -e "\\033[1;32m✅ Иконки Papirus успешно установлены\\033[0m"\n'
                     'echo ""\n'
-                    'echo "Нажмите любую клавишу для продолжения..."\n'
+                    'echo "Нажмите любую клавишу для выхода..."\n'
                     'read -n 1\n'
                 )
                 process = subprocess.Popen(
@@ -1768,7 +2056,6 @@ class MainWindow(QMainWindow):
             finally:
                 BUSY.release()
 
-            # Проверяем еще раз после установки (с учетом нужного варианта)
             for d in icon_dirs:
                 if os.path.exists(d):
                     for item in os.listdir(d):
@@ -1778,7 +2065,6 @@ class MainWindow(QMainWindow):
                 if papirus_theme_name:
                     break
 
-            # Если нужного варианта нет, ищем хоть какой-то Papirus
             if not papirus_theme_name:
                 for d in icon_dirs:
                     if os.path.exists(d):
@@ -1838,22 +2124,7 @@ class MainWindow(QMainWindow):
             new_theme = "breeze-dark"
             new_colorscheme = "BreezeLight"
 
-        # 5. Применяем настройки шрифтов
-        font_keys = ['font', 'menuFont', 'toolbarFont', 'taskbarFont', 'smallestReadableFont']
-        for k in font_keys:
-            val = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', k], capture_output=True, text=True).stdout.strip()
-            if val:
-                family = val.split(',')[0]
-                new_font = f"{family},10,-1,5,50,0,0,0,0,0"
-                subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', k, new_font])
-
-        active_font = subprocess.run(['kreadconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', 'activeFont'], capture_output=True, text=True).stdout.strip()
-        if active_font:
-            family = active_font.split(',')[0]
-            new_font = f"{family},10,-1,5,50,0,0,0,0,0"
-            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', 'activeFont', new_font])
-
-        # Удаляем жестко заданные цвета заголовков
+        # 5. Удаляем жестко заданные цвета заголовков
         wm_keys = ['activeBackground', 'activeForeground', 'inactiveBackground', 'inactiveForeground']
         for k in wm_keys:
             subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'WM', '--key', k, '--delete'])
@@ -1864,19 +2135,25 @@ class MainWindow(QMainWindow):
         subprocess.run(['kwriteconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'library', 'org.kde.breeze'])
         subprocess.run(['kwriteconfig6', '--file', 'kwinrc', '--group', 'org.kde.kdecoration2', '--key', 'theme', 'Breeze'])
 
-        # Применяем цветовую схему
+        # 7. Применяем цветовую схему (оставляем как было)
         res = subprocess.run(['plasma-apply-colorscheme', new_colorscheme], capture_output=True)
         if res.returncode != 0:
             subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', 'ColorScheme', new_colorscheme])
-            subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'KDE', '--key', 'widgetStyle', 'Breeze'])
 
-        # 7. Очистка кэша и перезапуск
+        # 7б. ВСЕГДА выставляем widgetStyle = Breeze (не только при сбое plasma-apply-colorscheme)
+        subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'KDE', '--key', 'widgetStyle', 'Breeze'])
+
+        # 8. Очистка кэша и перезапуск плазмы
         subprocess.run(['rm', '-f', os.path.expanduser('~/.cache/icon-cache.kcache')])
         subprocess.run(['kbuildsycoca6', '--noincremental'], capture_output=True)
         subprocess.run(['qdbus-qt6', 'org.kde.KWin', '/KWin', 'org.kde.KWin.reconfigure'], capture_output=True)
         self.restart_plasmashell()
 
-        QMessageBox.information(self, "Готово", "Современный интерфейс применён.\nПанель перезапущена для обновления.")
+        # 9. Обновляем индикаторы на кнопках
+        self.update_theme_checkmarks()
+
+        # 10. Принудительно переключаем тему программы под выбранный режим окон
+        QApplication.instance().setStyleSheet(get_stylesheet(force_dark=(mode == "dark")))
 
     def on_rollback_modern_ui(self):
         config_dir = get_config_dir()
@@ -2061,12 +2338,16 @@ class MainWindow(QMainWindow):
         return CategoryPage(cards)
 
 def run():
+    # Удаляем устаревший theme.conf (ручной выбор темы больше не используется)
+    try:
+        legacy = os.path.expanduser('~/.config/alt-kde-helper/theme.conf')
+        if os.path.exists(legacy):
+            os.remove(legacy)
+    except Exception:
+        pass
+
     app = QApplication(sys.argv)
-    saved = load_theme_setting()
-    if saved is not None:
-        app.setStyleSheet(get_stylesheet(force_dark=saved))
-    else:
-        app.setStyleSheet(get_stylesheet())
+    app.setStyleSheet(get_stylesheet())
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
