@@ -227,3 +227,10 @@ fi
 if [ "$MOUSE_OK" -eq 1 ]; then
     touch "$STATE_DIR/33_mouse-speed_action.sh"
 fi
+
+# ============================================================
+# 23. Маскировка ipp-usb (34_mask_ippusb_action.sh)
+# ============================================================
+if [ "$(systemctl is-enabled ipp-usb 2>/dev/null)" = "masked" ]; then
+    touch "$STATE_DIR/34_mask_ippusb_action.sh"
+fi

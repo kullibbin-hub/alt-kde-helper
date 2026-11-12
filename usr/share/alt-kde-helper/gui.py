@@ -2270,6 +2270,22 @@ class MainWindow(QMainWindow):
             "33_mouse-speed_rollback.sh"
         ))
 
+        cards.append(ActionCard(
+            "Исправить неправильное определение USB-принтера",
+            "Помогает, если принтер подключён по USB, но система его не видит\n"
+            "или определяет неправильно (как сетевое устройство).\n\n"
+            "На принтеры по Wi-Fi или сетевому кабелю это не влияет.\n"
+            "Но если к компьютеру подключены другие USB-принтеры или МФУ,\n"
+            "которые работают без отдельного драйвера (режим driverless),\n"
+            "их определение и печать могут нарушиться — в этом случае\n"
+            "используйте кнопку «Откат».\n\n"
+            "После применения переподключите USB-кабель принтера\n"
+            "или перезагрузите компьютер.\n\n"
+            "Кнопка «Откат» возвращает всё как было.",
+            "34_mask_ippusb_action.sh",
+            "34_mask_ippusb_rollback.sh"
+        ))
+
         cards.append(ActionCard("Включить локальную сеть (samba)", "Включает в автозапуск сервисы smb и nmb для обеспечения\nработы локальной сети с протоколом SMB.\n\nПакеты samba и samba-client должны быть установлены.", "22_enable_samba_action.sh", "22_enable_samba_rollback.sh"))
         return CategoryPage(cards)
 
@@ -2282,8 +2298,6 @@ class MainWindow(QMainWindow):
         cards.append(SimpleActionCard("Обновление / удаление ядер", "Установка новых и удаление неиспользуемых ядер.\nВнимательно следите за выводом в терминале! ", "23_update_kernel_action.sh"))
         cards.append(SimpleActionCard("Ремонт apt-get при ошибках", "apt-get dedup && pm --rebuilddb", "01_repair_apt_action.sh"))
         cards.append(SimpleActionCard("Исправление ошибки с прокси в Discover", "Пересоздание кэша packagekit.\nУстраняет ошибку, когда Discover не подключается к сети\nпосле удаления локального прокси.", "09_fix_discover_proxy_action.sh"))
-
-        cards.append(SimpleActionCard("Восстановление работы USB-принтера", "Переустанавливает пакет ipp-usb.\nПомогает, если USB-принтер перестал определяться\nи вместо него создаётся принтер driverless.\n\nТребуется подключение к интернету.\nПосле выполнения может потребоваться переподключить USB-кабель.", "34_reinstall_ippusb_action.sh"))
 
         title_widget = QWidget()
         title_layout = QHBoxLayout()
