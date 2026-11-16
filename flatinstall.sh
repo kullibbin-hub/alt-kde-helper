@@ -11,23 +11,26 @@ flatpak install -y flathub com.github.neithern.g4music          #Gapless;При�
 flatpak install -y flathub fr.handbrake.ghb                     #Handbrake;Видеоконвертер
 flatpak install -y flathub org.kde.kdenlive                     #Kdenlive;Видеоредактор от КДЕ
 flatpak install -y flathub io.github.seadve.Kooha               #Kooha;Запись экрана со звуком в видеофайл
+flatpak install -y flathub org.musescore.MuseScore              #MuseScore;Нотный редактор
 flatpak install -y flathub org.openshot.OpenShot                #Openshot;Видеоредактор
 flatpak install -y flathub com.saivert.pwvucontrol              #Pwvucontrol;Настройка звуковых устройств
 flatpak install -y flathub io.github.tntwise.REAL-Video-Enhancer #Real video enhancer;Улучшение видео через нейросеть
 flatpak install -y flathub fm.reaper.Reaper                     #Reaper;DAW
 flatpak install -y flathub org.shotcut.Shotcut                  #Shotcut;Видеоредактор
 flatpak install -y flathub org.gnome.Showtime                   #Showtime;Безрамочный видеоплейер gtk
-flatpak install -y flathub org.videolan.VLC                     #VLC;Видеоплейер 
+flatpak install -y flathub org.videolan.VLC                     #VLC;Видеоплейер
 
 
 #Графика
 
 flatpak install -y flathub org.gimp.GIMP                        #Gimp;Графический редактор
 flatpak install -y flathub be.alexandervanhee.gradia            #Gradia;Надписи на скриншоте
+flatpak install -н flathub org.inkscape.Inkscape                #Inkscape;Редактор векторной графики
 flatpak install -y flathub org.kde.krita                        #Krita;Графический редактор
 flatpak install -y flathub com.github.PintaProject.Pinta        #Pinta;Рисовалка и редактор
 flatpak install -y flathub com.github.flxzt.rnote               #Rnote;Рисовалка
 flatpak install -y flathub io.gitlab.theevilskeleton.Upscaler   #Upscaler;Увеличивает размер картинки через ИИ
+flatpak install -y flathub com.xnview.XnViewMP                  #XnView MP;Просмотр и конвертирование изображений
 
 #Интернет и сеть
 
@@ -59,6 +62,7 @@ flatpak install -y flathub app.drey.Dialect                     #Dialect;Дву�
 flatpak install -y flathub net.cozic.joplin_desktop             #Joplin;Заметки с синхро андроид линукс виндовс
 flatpak install -y flathub org.libreoffice.LibreOffice          #Libreoffice;Офис
 flatpak install -y flathub org.onlyoffice.desktopeditors        #Onlyoffice;Офис
+flatpak install -y flathub net.scribus.Scribus                  #Scribus;Верстка PDF и Postscript
 flatpak install -y flathub org.kde.skanlite                     #Skanlite;Сканирование с автообрезкой
 flatpak install -y flathub org.kde.skanpage                     #Skanpage;Сканирование в многостраничный pdf
 
@@ -73,11 +77,10 @@ flatpak install -y flathub com.prusa3d.PrusaSlicer              #Prusa slicer;С
 
 flatpak install -y flathub io.github.kolunmi.Bazaar             #Bazaar;Магазин флэтпак-программ
 flatpak install -y flathub com.usebottles.bottles               #Bottles;Запуск виндовс програм, разные профили
-flatpak install -y flathub it.mijorus.gearlever                 #Gearlever;Для установки программ .appimage
+flatpak install -y flathub it.mijorus.gearlever                 #Gearlever;Для установки программ appimage
 flatpak install -y flathub io.missioncenter.MissionCenter       #MissionCenter;Продвинутый диспетчер задач и служб
 flatpak install -y flathub io.github.peazip.PeaZip              #Peazip;Лучшая оболочка для архиватора
 flatpak install -y flathub ru.linux_gaming.PortProton           #Portproton;Запуск виндовс программ
-
 flatpak install -y flathub net.nokyan.Resources                 #Resources;Модный системный монитор
 flatpak install -y flathub io.github.vikdevelop.SaveDesktop     #SaveDesktop;Сохранение конфигурации рабочего стола
 flatpak install -y flathub com.github.d4nj1.tlpui               #Tlpui;GUI для tlp настройка энергосбережения
