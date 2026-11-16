@@ -6,11 +6,12 @@ import time
 import shutil
 import tempfile
 import subprocess
+import threading
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QRadioButton, QButtonGroup,
     QPushButton, QTreeWidget, QTreeWidgetItem, QFileDialog, QApplication,
-    QAbstractItemView
+    QAbstractItemView, QStackedWidget
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont
@@ -23,6 +24,9 @@ from flatcommon import (
 )
 from config import get_scripts_dir
 from busy import BUSY
+
+HOME_FLATINSTALL    = os.path.expanduser('~/.config/alt-kde-helper/flatinstall.sh')
+SCRIPTS_FLATINSTALL = os.path.join(get_scripts_dir(), 'flatinstall.sh')
 
 
 def _kd_error(text):
@@ -94,7 +98,7 @@ class FlatpakInstallPage(QWidget):
     MODE_ARCHIVE_DATA = 'archive_data'
     MODE_ARCHIVE_FULL = 'archive_full'
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, sync_status=None, restart_sync=None):
         super().__init__(parent)
 
         self._mode = self.MODE_FILE
@@ -105,6 +109,10 @@ class FlatpakInstallPage(QWidget):
         self._temp_dir = None
         self._loading = False
         self._load_failed = False
+
+        self.sync_status = sync_status
+        self.restart_sync = restart_sync
+        self._popular_loaded_state = None
 
         layout = QVBoxLayout()
 
@@ -118,9 +126,9 @@ class FlatpakInstallPage(QWidget):
         self.radio_popular = QRadioButton("Из списка популярных программ (встроенный список), онлайн")
         self.radio_archive_data = QRadioButton("Из архива — восстановить данные приложений")
         self.radio_archive_full = QRadioButton("Из архива — полное восстановление (все программы + данные, без выбора)")
-        self.radio_file.setChecked(True)
+        self.radio_popular.setChecked(True)
         self.src_group = QButtonGroup(self)
-        for r in (self.radio_file, self.radio_popular,
+        for r in (self.radio_popular, self.radio_file,
                   self.radio_archive_data, self.radio_archive_full):
             self.src_group.addButton(r)
             src_layout.addWidget(r)
@@ -154,22 +162,49 @@ class FlatpakInstallPage(QWidget):
         self.size_label.setVisible(False)
         layout.addWidget(self.size_label)
 
+        # --- Статус синхронизации списка ---
+        self.status_label = QLabel()
+        self.status_label.setWordWrap(True)
+        self.status_label.setVisible(False)
+        layout.addWidget(self.status_label)
+
         # --- Кнопки ---
         btn_layout = QHBoxLayout()
         self.btn_select_all = QPushButton("Выбрать все")
         self.btn_select_none = QPushButton("Снять выбор")
+        self.btn_refresh = QPushButton("Обновить")
+        self.btn_refresh.setIcon(QIcon.fromTheme("view-refresh"))
+        self.btn_refresh.setVisible(False)
+        self.btn_refresh.clicked.connect(self._on_refresh_clicked)
         self.btn_apply = QPushButton("Применить")
         self.btn_apply.setIcon(QIcon.fromTheme("dialog-ok"))
-        for b in (self.btn_select_all, self.btn_select_none, self.btn_apply):
+        for b in (self.btn_select_all, self.btn_select_none, self.btn_refresh, self.btn_apply):
             b.setProperty("class", "BottomButton")
 
         btn_layout.addWidget(self.btn_select_all)
         btn_layout.addWidget(self.btn_select_none)
+        btn_layout.addWidget(self.btn_refresh)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_apply)
         layout.addLayout(btn_layout)
 
-        self.setLayout(layout)
+        # Оборачиваем форму в отдельный виджет (для стека с предупреждением)
+        self.form_widget = QWidget()
+        self.form_widget.setLayout(layout)
+
+        # Виджет "Flatpak не установлен"
+        self.missing_widget = QWidget()
+        self._build_missing_widget()
+
+        # Стек: 0 — форма, 1 — предупреждение
+        self.stack = QStackedWidget()
+        self.stack.addWidget(self.form_widget)
+        self.stack.addWidget(self.missing_widget)
+
+        outer = QVBoxLayout()
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self.stack)
+        self.setLayout(outer)
 
         # --- Коннекты ---
         self.radio_file.toggled.connect(self._on_mode_changed)
@@ -182,7 +217,80 @@ class FlatpakInstallPage(QWidget):
 
         BUSY.changed.connect(self._on_busy_changed)
 
+        if self.sync_status is not None:
+            self.sync_status.changed.connect(self._on_sync_state)
+
+        self._mode = self._current_mode()
         self._apply_mode_state()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        has_flatpak = shutil.which('flatpak') is not None
+        if has_flatpak and self.stack.currentIndex() == 1:
+            self._apply_mode_state()
+        elif not has_flatpak and self.stack.currentIndex() == 0:
+            self._apply_mode_state()
+
+    def _build_missing_widget(self):
+        layout = QVBoxLayout(self.missing_widget)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        layout.addStretch(1)
+
+        title = QLabel("<h2>Flatpak не установлен</h2>")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+
+        info = QLabel("Для работы этого раздела требуется Flatpak.\n"
+                      "Установить его можно прямо здесь.")
+        info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info.setWordWrap(True)
+        layout.addWidget(info)
+
+        layout.addSpacing(20)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        self.btn_install_flatpak = QPushButton("Установить Flatpak")
+        self.btn_install_flatpak.setProperty("class", "BottomButton")
+        self.btn_install_flatpak.setMinimumHeight(40)
+        self.btn_install_flatpak.setIcon(QIcon.fromTheme("system-software-install"))
+        self.btn_install_flatpak.clicked.connect(self._on_install_flatpak)
+        btn_row.addWidget(self.btn_install_flatpak)
+        btn_row.addStretch()
+        layout.addLayout(btn_row)
+
+        layout.addSpacing(15)
+
+        self.flatpak_install_status = QLabel()
+        self.flatpak_install_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.flatpak_install_status.setWordWrap(True)
+        layout.addWidget(self.flatpak_install_status)
+
+        layout.addStretch(1)
+
+    def _on_install_flatpak(self):
+        if BUSY.is_busy():
+            return
+        script = os.path.join(get_scripts_dir(), '10_install_flatpak_action.sh')
+        if not os.path.exists(script):
+            _kd_error(f"Скрипт установки Flatpak не найден:\n{script}")
+            return
+        self.flatpak_install_status.setStyleSheet("")
+        self.flatpak_install_status.setText("Идёт установка Flatpak...")
+        self._worker = run_in_konsole(
+            script, "Установка Flatpak",
+            self._on_flatpak_install_finished, parent=self)
+
+    def _on_flatpak_install_finished(self):
+        self._worker = None
+        if shutil.which('flatpak'):
+            self.flatpak_install_status.setText("")
+            self._apply_mode_state()
+        else:
+            self.flatpak_install_status.setStyleSheet("color: red;")
+            self.flatpak_install_status.setText(
+                "Установка не удалась. Попробуйте ещё раз.")
 
     # ---------- определение режима ----------
 
@@ -204,10 +312,17 @@ class FlatpakInstallPage(QWidget):
         self._mode = new_mode
         self._selected_path = None
         self._loaded = None
+        self._popular_loaded_state = None
         self.tree.clear()
         self._apply_mode_state()
 
     def _apply_mode_state(self):
+        if shutil.which('flatpak') is None:
+            self._hide_status()
+            self.stack.setCurrentIndex(1)
+            return
+
+        self.stack.setCurrentIndex(0)
         m = self._mode
 
         # Текст источника и кнопки
@@ -217,11 +332,9 @@ class FlatpakInstallPage(QWidget):
             self.btn_choose.setText("Выбрать файл")
             self.btn_choose.setVisible(True)
         elif m == self.MODE_POPULAR:
-            popular_path = os.path.join(get_scripts_dir(), 'flatinstall.sh')
             self.source_label.setText("Встроенный список: flatinstall.sh")
-            self.source_label.setToolTip(popular_path)
+            self.source_label.setToolTip(HOME_FLATINSTALL)
             self.btn_choose.setVisible(False)
-            self._start_load('script', popular_path)
         elif m == self.MODE_ARCHIVE_DATA:
             self.source_label.setText("Архив не выбран")
             self.source_label.setToolTip("")
@@ -258,13 +371,110 @@ class FlatpakInstallPage(QWidget):
         self.size_label.setVisible(m in (self.MODE_ARCHIVE_DATA, self.MODE_ARCHIVE_FULL))
         self.size_label.setText("")
 
-        self._lock_ui(self._loading)
-        self._update_apply_enabled()
+        self.btn_refresh.setVisible(m == self.MODE_POPULAR)
+
+        if m == self.MODE_POPULAR:
+            self._refresh_popular_from_state()
+        else:
+            self._hide_status()
+            self._lock_ui(self._compute_lock())
+            self._update_apply_enabled()
+
+    # ---------- синхронизация списка ----------
+
+    def _compute_lock(self):
+        if self._loading:
+            return True
+        if self._mode == self.MODE_POPULAR and self.sync_status is not None:
+            state = self.sync_status.last_state
+            if state in (None, 'checking'):
+                return True
+        return False
+
+    def _show_status(self, text, color):
+        self.status_label.setText(text)
+        if color == "red":
+            self.status_label.setStyleSheet("color: red;")
+        else:
+            self.status_label.setStyleSheet("")
+        self.status_label.setVisible(True)
+
+    def _hide_status(self):
+        self.status_label.setVisible(False)
+        self.status_label.setText("")
+
+    def _show_status_for_state(self, state):
+        if state == 'updated':
+            self._show_status("Список обновлен", "default")
+        elif state == 'failed':
+            self._show_status(
+                "Не удалось обновить список с github. "
+                "Проверьте подключение и нажмите «Обновить».",
+                "red"
+            )
+        elif state == 'unchanged':
+            self._hide_status()
+        else:
+            self._show_status("Проверка обновления списка программ.....", "red")
+
+    def _on_sync_state(self, state):
+        if self._mode == self.MODE_POPULAR:
+            self._refresh_popular_from_state()
+
+    def _on_refresh_clicked(self):
+        if not self.restart_sync:
+            return
+        if self.sync_status is not None:
+            if self.sync_status.last_state == 'checking':
+                return
+            self.sync_status.emit_state('checking')
+        threading.Thread(target=self.restart_sync, daemon=True).start()
+
+    def _refresh_popular_from_state(self):
+        if self._mode != self.MODE_POPULAR:
+            return
+
+        if self.sync_status is None:
+            if self._popular_loaded_state is None:
+                self._popular_loaded_state = 'updated'
+                path = HOME_FLATINSTALL if os.path.exists(HOME_FLATINSTALL) else SCRIPTS_FLATINSTALL
+                if os.path.exists(path):
+                    self._start_load('script', path)
+            return
+
+        state = self.sync_status.last_state
+
+        if state in (None, 'checking'):
+            self._show_status("Проверка обновления списка программ.....", "red")
+            self._popular_loaded_state = None
+            self.tree.clear()
+            self._loaded = None
+            self._lock_ui(True)
+            self._update_apply_enabled()
+            return
+
+        self._show_status_for_state(state)
+
+        if state == self._popular_loaded_state:
+            self._lock_ui(self._compute_lock())
+            self._update_apply_enabled()
+            return
+
+        self._popular_loaded_state = state
+        path = HOME_FLATINSTALL if os.path.exists(HOME_FLATINSTALL) else SCRIPTS_FLATINSTALL
+        if os.path.exists(path):
+            self._start_load('script', path)
+        else:
+            self._show_status("Список программ не найден", "red")
+            self._lock_ui(self._compute_lock())
+            self._update_apply_enabled()
 
     # ---------- BUSY ----------
 
     def _on_busy_changed(self, busy):
         self._update_apply_enabled()
+        if hasattr(self, 'btn_install_flatpak'):
+            self.btn_install_flatpak.setEnabled(not busy)
 
     def _update_apply_enabled(self):
         can = (not self._loading) and (not BUSY.is_busy()) and (self._loaded is not None)
@@ -320,7 +530,7 @@ class FlatpakInstallPage(QWidget):
 
     def _on_loader_finished(self):
         self._loading = False
-        self._lock_ui(False)
+        self._lock_ui(self._compute_lock())
         self._update_apply_enabled()
         if self._load_failed:
             return
@@ -1139,9 +1349,16 @@ class FlatpakInstallPage(QWidget):
 
     def _on_worker_finished(self):
         self._cleanup_temp()
-        self._lock_ui(False)
+        self._lock_ui(self._compute_lock())
         self._update_apply_enabled()
         self._worker = None
+
+        if self._mode == self.MODE_POPULAR:
+            path = HOME_FLATINSTALL if os.path.exists(HOME_FLATINSTALL) else SCRIPTS_FLATINSTALL
+            if os.path.exists(path):
+                self._start_load('script', path)
+        elif self._mode == self.MODE_FILE and self._selected_path:
+            self._start_load('script', self._selected_path)
 
     def _cleanup_temp(self):
         if self._temp_dir and os.path.isdir(self._temp_dir):
@@ -1154,9 +1371,12 @@ class FlatpakInstallPage(QWidget):
     # ---------- блокировка ----------
 
     def _lock_ui(self, locked):
-        for w in (self.radio_file, self.radio_popular,
-                  self.radio_archive_data, self.radio_archive_full,
-                  self.btn_choose, self.tree,
-                  self.btn_select_all, self.btn_select_none,
-                  self.btn_apply):
+        widgets = [self.radio_file, self.radio_popular,
+                   self.radio_archive_data, self.radio_archive_full,
+                   self.btn_choose, self.tree,
+                   self.btn_select_all, self.btn_select_none,
+                   self.btn_apply, self.btn_refresh]
+        if hasattr(self, 'btn_install_flatpak'):
+            widgets.append(self.btn_install_flatpak)
+        for w in widgets:
             w.setEnabled(not locked)

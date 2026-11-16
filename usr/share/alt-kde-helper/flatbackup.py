@@ -11,7 +11,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QRadioButton, QButtonGroup,
     QPushButton, QTreeWidget, QTreeWidgetItem, QFileDialog, QInputDialog,
-    QMessageBox, QAbstractItemView
+    QMessageBox, QAbstractItemView, QStackedWidget
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon
@@ -21,6 +21,7 @@ from flatcommon import (
     get_running_apps, du_sb, df_free, human_size, format_sizes,
     C_CYAN, C_YELLOW, C_GREEN, C_RED, C_RESET,
 )
+from config import get_scripts_dir
 from busy import BUSY
 
 # Цвет для сообщений о загрузке (красный)
@@ -74,6 +75,7 @@ class FlatpakBackupPage(QWidget):
         self._raw_system = 0
         self._raw_user = 0
         self._raw_data = {}
+        self._free_home = 0
 
         layout = QVBoxLayout()
 
@@ -137,7 +139,23 @@ class FlatpakBackupPage(QWidget):
         btn_layout.addWidget(self.btn_create)
         layout.addLayout(btn_layout)
 
-        self.setLayout(layout)
+        # Оборачиваем форму в отдельный виджет (для стека с предупреждением)
+        self.form_widget = QWidget()
+        self.form_widget.setLayout(layout)
+
+        # Виджет "Flatpak не установлен"
+        self.missing_widget = QWidget()
+        self._build_missing_widget()
+
+        # Стек: 0 — форма, 1 — предупреждение
+        self.stack = QStackedWidget()
+        self.stack.addWidget(self.form_widget)
+        self.stack.addWidget(self.missing_widget)
+
+        outer = QVBoxLayout()
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self.stack)
+        self.setLayout(outer)
 
         self.radio_full.toggled.connect(self._on_mode_changed)
         self.radio_data.toggled.connect(self._on_mode_changed)
@@ -152,13 +170,87 @@ class FlatpakBackupPage(QWidget):
 
         self._lock_ui(True)
 
+    # --- виджет "Flatpak не установлен" ---
+
+    def _build_missing_widget(self):
+        layout = QVBoxLayout(self.missing_widget)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        layout.addStretch(1)
+
+        title = QLabel("<h2>Flatpak не установлен</h2>")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+
+        info = QLabel("Для работы этого раздела требуется Flatpak.\n"
+                      "Установить его можно прямо здесь.")
+        info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info.setWordWrap(True)
+        layout.addWidget(info)
+
+        layout.addSpacing(20)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        self.btn_install_flatpak = QPushButton("Установить Flatpak")
+        self.btn_install_flatpak.setProperty("class", "BottomButton")
+        self.btn_install_flatpak.setMinimumHeight(40)
+        self.btn_install_flatpak.setIcon(QIcon.fromTheme("system-software-install"))
+        self.btn_install_flatpak.clicked.connect(self._on_install_flatpak)
+        btn_row.addWidget(self.btn_install_flatpak)
+        btn_row.addStretch()
+        layout.addLayout(btn_row)
+
+        layout.addSpacing(15)
+
+        self.flatpak_install_status = QLabel()
+        self.flatpak_install_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.flatpak_install_status.setWordWrap(True)
+        layout.addWidget(self.flatpak_install_status)
+
+        layout.addStretch(1)
+
+    def _on_install_flatpak(self):
+        if BUSY.is_busy():
+            return
+        script = os.path.join(get_scripts_dir(), '10_install_flatpak_action.sh')
+        if not os.path.exists(script):
+            QMessageBox.critical(self, "Ошибка",
+                                 f"Скрипт установки Flatpak не найден:\n{script}")
+            return
+        self.flatpak_install_status.setStyleSheet("")
+        self.flatpak_install_status.setText("Идёт установка Flatpak...")
+        self.worker = run_in_konsole(
+            script, "Установка Flatpak",
+            self._on_flatpak_install_finished, parent=self)
+
+    def _on_flatpak_install_finished(self):
+        self.worker = None
+        if shutil.which('flatpak'):
+            self.flatpak_install_status.setText("")
+            self.stack.setCurrentIndex(0)
+            if not self._loader_started:
+                self._loader_started = True
+                self._start_loader()
+        else:
+            self.flatpak_install_status.setStyleSheet("color: red;")
+            self.flatpak_install_status.setText(
+                "Установка не удалась. Попробуйте ещё раз.")
+
     # --- ленивая загрузка при первом показе ---
 
     def showEvent(self, event):
         super().showEvent(event)
+        self._free_home = df_free(os.path.expanduser('~'))
+        if shutil.which('flatpak') is None:
+            self.stack.setCurrentIndex(1)
+            return
+        self.stack.setCurrentIndex(0)
         if not self._loader_started:
             self._loader_started = True
             self._start_loader()
+        elif not self._loading:
+            self._update_size_label()
 
     def _start_loader(self):
         self._loader = DataLoader(self)
@@ -199,6 +291,8 @@ class FlatpakBackupPage(QWidget):
 
     def _on_busy_changed(self, busy):
         self._update_create_enabled()
+        if hasattr(self, 'btn_install_flatpak'):
+            self.btn_install_flatpak.setEnabled(not busy)
 
     def _update_create_enabled(self):
         # btn_create доступна, только если данные загружены и konsole не работает
@@ -293,12 +387,13 @@ class FlatpakBackupPage(QWidget):
         self.size_label.setStyleSheet("")
         if self.radio_full.isChecked():
             est_prog = (self._raw_system + self._raw_user) * 0.4
-            est_data = sum(self._raw_data.values()) * 0.5
+            est_data = sum(self._raw_data.values()) * 0.65
             est = est_prog + est_data
             total_s, prog_s, data_s = format_sizes(est, est_prog, est_data)
             self.size_label.setText(
                 f"Оценка размера бэкапа: ~{total_s} "
-                f"(программы ~{prog_s}, данные ~{data_s})"
+                f"(программы ~{prog_s}, данные ~{data_s})\n"
+                f"Свободно в домашнем разделе: ~{human_size(self._free_home)}"
             )
         elif self.radio_data.isChecked():
             selected_sum = 0
@@ -307,9 +402,10 @@ class FlatpakBackupPage(QWidget):
                 if item.checkState(1) == Qt.CheckState.Checked:
                     app_id = item.data(0, Qt.ItemDataRole.UserRole)
                     selected_sum += self._raw_data.get(app_id, 0)
-            est = selected_sum * 0.5
+            est = selected_sum * 0.65
             self.size_label.setText(
-                f"Оценка размера бэкапа данных: ~{human_size(est)}"
+                f"Оценка размера бэкапа данных: ~{human_size(est)}\n"
+                f"Свободно в домашнем разделе: ~{human_size(self._free_home)}"
             )
 
     def _on_tree_backup_changed(self, item, column):
@@ -404,16 +500,12 @@ class FlatpakBackupPage(QWidget):
         if self._loading or BUSY.is_busy():
             return
 
-        parent_dir = QFileDialog.getExistingDirectory(
-            self, "Выберите папку для бэкапа", os.path.expanduser('~/'),
-            options=QFileDialog.Option.ShowDirsOnly,
-        )
-        if not parent_dir:
-            return
-
+        suffix = 'full' if self.radio_full.isChecked() else 'data'
+        default_name = f"flatpak-backup-{suffix}-{datetime.now().strftime('%Y-%m-%d')}"
         name, ok = QInputDialog.getText(
             self, "Имя бэкапа",
-            "Введите имя папки бэкапа (без расширения .backup):"
+            "Введите имя папки бэкапа (без расширения .backup):",
+            text=default_name,
         )
         if not ok:
             return
@@ -422,6 +514,15 @@ class FlatpakBackupPage(QWidget):
             return
         if '/' in name or '\\' in name or name in ('.', '..'):
             QMessageBox.critical(self, "Ошибка", "Недопустимое имя папки.")
+            return
+
+        parent_dir = QFileDialog.getExistingDirectory(
+            self,
+            f"Выберите папку, в которой будет создана папка {name}.backup",
+            os.path.expanduser('~/'),
+            options=QFileDialog.Option.ShowDirsOnly,
+        )
+        if not parent_dir:
             return
 
         target = os.path.join(parent_dir, name + '.backup')
@@ -464,8 +565,8 @@ class FlatpakBackupPage(QWidget):
         raw_system = self._raw_system if backup_type == 'full' else 0
         raw_user = self._raw_user if backup_type == 'full' else 0
         raw_data_sum = sum(self._raw_data.get(a, 0) for a in apps_with_data)
-        estimate = (raw_system + raw_user) * 0.4 + raw_data_sum * 0.5
-        need = int(estimate * 1.5)
+        estimate = (raw_system + raw_user) * 0.65 + raw_data_sum * 0.65
+        need = int(estimate * 1.2)
         free = df_free(parent_dir)
         if need > free:
             need_s, free_s = format_sizes(need, free)
@@ -590,13 +691,27 @@ class FlatpakBackupPage(QWidget):
         L = []
         L.append('#!/bin/bash')
         L.append('')
+        L.append(f'mkdir -p "{t}"')
+        L.append(f'if [ ! -d "{t}" ]; then')
+        L.append(f'    echo -e "{{C_RED}}❌ Не удалось создать папку бэкапа: {t}{{C_RESET}}"')
+        L.append(f'    echo -e "{{C_YELLOW}}Нажмите любую клавишу для выхода...{{C_RESET}}"')
+        L.append('    read -n1')
+        L.append('    exit 1')
+        L.append('fi')
+        L.append('')
         L.append(f'echo -e "{C_CYAN}========================================{C_RESET}"')
         L.append(f'echo -e "{C_CYAN}Создание бэкапа Flatpak: {base_name}{C_RESET}"')
         L.append(f'echo -e "{C_CYAN}========================================{C_RESET}"')
         L.append('')
 
 
-
+        L.append(f'echo -e "{C_YELLOW}→ Очистка кэшей Flatpak-приложений...{C_RESET}"')
+        for app_id in apps_with_data:
+            L.append(f'if [ -d ~/.var/app/{app_id}/cache ]; then find ~/.var/app/{app_id}/cache -mindepth 1 -delete 2>/dev/null || true; fi')
+        L.append('')
+        L.append(f'echo -e "{C_YELLOW}→ Удаление неиспользуемых рантаймов Flatpak...{C_RESET}"')
+        L.append('flatpak uninstall --unused -y 2>&1 || true')
+        L.append('')
         L.append(f'printf "\\r\\033[K"; echo -e "{C_YELLOW}→ Подсчёт размеров...{C_RESET}"')
         L.append(f'SIZES="{sizes}"')
         L.append(': > "$SIZES"')
@@ -751,6 +866,8 @@ class FlatpakBackupPage(QWidget):
                     pass
 
         self._cleanup_temp()
+        self._free_home = df_free(os.path.expanduser('~'))
+        self._update_size_label()
         self._lock_ui(False)
         self._update_create_enabled()
         self.worker = None
@@ -766,8 +883,11 @@ class FlatpakBackupPage(QWidget):
     # --- блокировка ---
 
     def _lock_ui(self, locked):
-        for w in (self.radio_full, self.radio_data, self.radio_list,
-                  self.tree_backup, self.tree_list,
-                  self.btn_select_all, self.btn_select_none,
-                  self.btn_apply, self.btn_create):
+        widgets = [self.radio_full, self.radio_data, self.radio_list,
+                   self.tree_backup, self.tree_list,
+                   self.btn_select_all, self.btn_select_none,
+                   self.btn_apply, self.btn_create]
+        if hasattr(self, 'btn_install_flatpak'):
+            widgets.append(self.btn_install_flatpak)
+        for w in widgets:
             w.setEnabled(not locked)

@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QScrollArea, QMessageBox, QPushButton, QButtonGroup, QDialog, QApplication,
     QMenu, QRadioButton, QFileDialog
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent, QSize
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QPoint, QEvent, QSize, QObject
 from PyQt6.QtGui import QDesktopServices, QIcon, QCloseEvent, QAction, QPixmap
 from config import (
     get_stylesheet, get_scripts_dir, get_state_dir, get_actions_dir,
@@ -21,6 +21,7 @@ from config import (
 from flatbackup import FlatpakBackupPage
 from flatinstall import FlatpakInstallPage
 from busy import BUSY
+import flatsync
 
 # Путь к вшитому пресету панели
 PRESET_FILE_PATH = '/opt/alt-kde-helper/usr/share/alt-kde-helper/plasma-org.kde.plasma.desktop-appletsrc'
@@ -35,6 +36,10 @@ def get_current_version():
 def get_config_dir():
     """Возвращает путь к папке конфигурации программы"""
     return os.path.expanduser('~/.config/alt-kde-helper')
+HOME_FLATINSTALL    = os.path.join(get_config_dir(), 'flatinstall.sh')
+MARKER_PATH         = os.path.join(get_config_dir(), '.flatsync_version')
+SCRIPTS_FLATINSTALL = os.path.join(get_scripts_dir(), 'flatinstall.sh')
+
 
 def get_packages_file_path():
     """Возвращает путь к файлу списка пакетов для текущей версии"""
@@ -847,6 +852,18 @@ class AppearancePage(QWidget):
         layout.addWidget(scroll)
         self.setLayout(layout)
 
+class SyncStatus(QObject):
+    changed = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.last_state = None
+
+    def emit_state(self, state):
+        self.last_state = state
+        self.changed.emit(state)
+
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -1019,8 +1036,19 @@ class MainWindow(QMainWindow):
         self.appearance_page.btn_icons_papirus.clicked.connect(self.on_apply_papirus_icons)
         self.appearance_page.btn_reset_ui.clicked.connect(self.on_reset_to_default)
 
+        self.sync_status = SyncStatus()
+        self._restart_sync = lambda: flatsync.do_sync(
+            get_current_version(),
+            self.sync_status.emit_state,
+            SCRIPTS_FLATINSTALL,
+            HOME_FLATINSTALL,
+            MARKER_PATH,
+        )
         self.flatpak_backup_page = FlatpakBackupPage()
-        self.flatpak_install_page = FlatpakInstallPage()
+        self.flatpak_install_page = FlatpakInstallPage(
+            sync_status=self.sync_status,
+            restart_sync=self._restart_sync,
+        )
 
         self.stack_layout.addWidget(self.maintenance_page)
         self.stack_layout.addWidget(self.fixes_page)
@@ -1103,6 +1131,7 @@ class MainWindow(QMainWindow):
 
         from threading import Thread
         Thread(target=self.check_updates_background, daemon=True).start()
+        Thread(target=self._restart_sync, daemon=True).start()
 
     def _on_busy_changed(self, busy):
         """Блокирует кнопки применения, пока работает konsole."""
@@ -1213,6 +1242,8 @@ class MainWindow(QMainWindow):
         self.recommended_btn.setVisible(show_bottom)
         self.apply_btn.setVisible(show_bottom)
         self.bottom_line.setVisible(show_bottom)
+        if index == 0:
+            self._refresh_flathub_mirror_visibility()
         if index == 2:
             self.update_theme_checkmarks()
 
@@ -1326,14 +1357,15 @@ class MainWindow(QMainWindow):
                 if os.path.exists(script_src) and not os.path.exists(action_path):
                     copy_and_patch(script_src, action_path, actions_dir)
 
-        flathub_mirror_card = self.get_flathub_mirror_card()
-        if flathub_mirror_card:
-            selected_script = flathub_mirror_card.get_selected_mirror_script()
-            if selected_script:
-                script_src = os.path.join(scripts_dir, selected_script)
-                action_path = os.path.join(actions_dir, selected_script)
-                if os.path.exists(script_src) and not os.path.exists(action_path):
-                    copy_and_patch(script_src, action_path, actions_dir)
+        if self._has_flatpak():
+            flathub_mirror_card = self.get_flathub_mirror_card()
+            if flathub_mirror_card:
+                selected_script = flathub_mirror_card.get_selected_mirror_script()
+                if selected_script:
+                    script_src = os.path.join(scripts_dir, selected_script)
+                    action_path = os.path.join(actions_dir, selected_script)
+                    if os.path.exists(script_src) and not os.path.exists(action_path):
+                        copy_and_patch(script_src, action_path, actions_dir)
 
         action_files = [f for f in os.listdir(actions_dir) if f.endswith('.sh') and f != '99_final.sh']
         if not action_files:
@@ -2289,11 +2321,19 @@ class MainWindow(QMainWindow):
         cards.append(ActionCard("Включить локальную сеть (samba)", "Включает в автозапуск сервисы smb и nmb для обеспечения\nработы локальной сети с протоколом SMB.\n\nПакеты samba и samba-client должны быть установлены.", "22_enable_samba_action.sh", "22_enable_samba_rollback.sh"))
         return CategoryPage(cards)
 
+    def _has_flatpak(self):
+        return shutil.which('flatpak') is not None
+
+    def _refresh_flathub_mirror_visibility(self):
+        if hasattr(self, 'flathub_mirror_card'):
+            self.flathub_mirror_card.setVisible(self._has_flatpak())
+
     def create_maintenance_page(self):
         cards = []
         cards.append(MirrorCard())
-        if subprocess.run(['rpm', '-q', 'flatpak'], capture_output=True).returncode == 0:
-            cards.append(FlathubMirrorCard())
+        self.flathub_mirror_card = FlathubMirrorCard()
+        self.flathub_mirror_card.setVisible(self._has_flatpak())
+        cards.append(self.flathub_mirror_card)
         cards.append(SimpleActionCard("Установка рекомендованных пакетов", f"Устанавливает пакеты из списка {get_packages_file_path()}\nСписок можно редактировать через меню в верхнем левом углу окна приложения", "07_install_packages_action.sh"))
         cards.append(SimpleActionCard("Обновление / удаление ядер", "Установка новых и удаление неиспользуемых ядер.\nВнимательно следите за выводом в терминале! ", "23_update_kernel_action.sh"))
         cards.append(SimpleActionCard("Ремонт apt-get при ошибках", "apt-get dedup && pm --rebuilddb", "01_repair_apt_action.sh"))
