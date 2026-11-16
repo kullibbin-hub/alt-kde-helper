@@ -77,6 +77,7 @@ flatpak install -y flathub it.mijorus.gearlever                 #Gearlever;Дл�
 flatpak install -y flathub io.missioncenter.MissionCenter       #MissionCenter;Продвинутый диспетчер задач и служб
 flatpak install -y flathub io.github.peazip.PeaZip              #Peazip;Лучшая оболочка для архиватора
 flatpak install -y flathub ru.linux_gaming.PortProton           #Portproton;Запуск виндовс программ
+
 flatpak install -y flathub net.nokyan.Resources                 #Resources;Модный системный монитор
 flatpak install -y flathub io.github.vikdevelop.SaveDesktop     #SaveDesktop;Сохранение конфигурации рабочего стола
 flatpak install -y flathub com.github.d4nj1.tlpui               #Tlpui;GUI для tlp настройка энергосбережения
