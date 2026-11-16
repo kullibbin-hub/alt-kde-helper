@@ -73,7 +73,7 @@ flatpak install -y flathub com.prusa3d.PrusaSlicer              #Prusa slicer;С
 
 flatpak install -y flathub io.github.kolunmi.Bazaar             #Bazaar;Магазин флэтпак-программ
 flatpak install -y flathub com.usebottles.bottles               #Bottles;Запуск виндовс програм, разные профили
-flatpak install -y flathub it.mijorus.gearlever                 #Gearlever;Для установки программ appimage
+flatpak install -y flathub it.mijorus.gearlever                 #Gearlever;Для установки программ .appimage
 flatpak install -y flathub io.missioncenter.MissionCenter       #MissionCenter;Продвинутый диспетчер задач и служб
 flatpak install -y flathub io.github.peazip.PeaZip              #Peazip;Лучшая оболочка для архиватора
 flatpak install -y flathub ru.linux_gaming.PortProton           #Portproton;Запуск виндовс программ
