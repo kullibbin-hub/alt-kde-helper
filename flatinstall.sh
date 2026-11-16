@@ -17,7 +17,7 @@ flatpak install -y flathub io.github.tntwise.REAL-Video-Enhancer #Real video enh
 flatpak install -y flathub fm.reaper.Reaper                     #Reaper;DAW
 flatpak install -y flathub org.shotcut.Shotcut                  #Shotcut;Видеоредактор
 flatpak install -y flathub org.gnome.Showtime                   #Showtime;Безрамочный видеоплейер gtk
-flatpak install -y flathub org.videolan.VLC                     #VLC;Видеоплейер
+flatpak install -y flathub org.videolan.VLC                     #VLC;Видеоплейер 
 
 
 #Графика
