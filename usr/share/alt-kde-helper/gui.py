@@ -1825,42 +1825,16 @@ class MainWindow(QMainWindow):
     def on_apply_alt_icons(self):
         res = subprocess.run(['rpm', '-q', 'icon-theme-altos'], capture_output=True)
         if res.returncode != 0:
-            reply = QMessageBox.question(self, "Иконки ALT не найдены", "Установить пакет icon-theme-altos?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            reply = QMessageBox.question(self, "Иконки не найдены",
+                "Для применения настроек требуются иконки ALT Linux, но они не найдены в системе.\n\n"
+                "Установить их сейчас? (Потребуется подключение к интернету)",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes)
             if reply != QMessageBox.StandardButton.Yes: return
             BUSY.acquire()
             try:
-                cmd = (
-                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
-                    'echo -e "\\033[1;36mУстановка иконок ALT Linux\\033[0m"\n'
-                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
-                    '\n'
-                    'echo -e "\\033[1;33m→ Обновление списка пакетов...\\033[0m"\n'
-                    'sudo apt-get update\n'
-                    'if [ $? -ne 0 ]; then\n'
-                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось обновить список пакетов\\033[0m"\n'
-                    '    echo ""\n'
-                    '    echo "Нажмите любую клавишу для выхода..."\n'
-                    '    read -n 1\n'
-                    '    exit 1\n'
-                    'fi\n'
-                    '\n'
-                    'echo -e "\\033[1;33m→ Установка icon-theme-altos...\\033[0m"\n'
-                    'sudo apt-get install -y icon-theme-altos\n'
-                    'if [ $? -ne 0 ]; then\n'
-                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось установить icon-theme-altos\\033[0m"\n'
-                    '    echo ""\n'
-                    '    echo "Нажмите любую клавишу для выхода..."\n'
-                    '    read -n 1\n'
-                    '    exit 1\n'
-                    'fi\n'
-                    '\n'
-                    'echo -e "\\033[1;32m✅ Иконки ALT Linux успешно установлены\\033[0m"\n'
-                    'echo ""\n'
-                    'echo "Нажмите любую клавишу для выхода..."\n'
-                    'read -n 1\n'
-                )
-                subprocess.Popen(['konsole', '--separate', '--title', 'Установка иконок ALT', '-e', 'bash', '-c', cmd]).wait()
-                if subprocess.run(['rpm', '-q', 'icon-theme-altos'], capture_output=True).returncode != 0:
+                success = self._install_icons_via_konsole('install_altlinux_icons.sh', 'Установка иконок ALT Linux')
+                if not success:
                     QMessageBox.critical(self, "Ошибка", "Не удалось установить пакет. Применение отменено.")
                     return
             finally:
@@ -1880,6 +1854,15 @@ class MainWindow(QMainWindow):
         subprocess.run(['kwriteconfig6', '--file', 'kdeglobals', '--group', 'Icons', '--key', 'Theme', new_icons])
         self._refresh_icons()
         self.update_theme_checkmarks()
+
+    def _install_icons_via_konsole(self, script_name, title):
+        """Запускает скрипт установки иконок в konsole. Возвращает True при успехе."""
+        script = os.path.join(get_scripts_dir(), script_name)
+        process = subprocess.Popen(
+            ['konsole', '--separate', '--title', title, '-e', 'bash', script]
+        )
+        process.wait()
+        return process.returncode == 0
 
     def on_apply_papirus_icons(self):
         is_dark = self._is_dark_windows()
@@ -1905,41 +1888,18 @@ class MainWindow(QMainWindow):
                 if papirus_theme_name: break
 
         if not papirus_theme_name:
-            reply = QMessageBox.question(self, "Иконки не найдены", "Установить иконки Papirus?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            reply = QMessageBox.question(self, "Иконки не найдены",
+                "Для применения настроек требуются иконки Papirus, но они не найдены в системе.\n\n"
+                "Установить их сейчас? (Потребуется подключение к интернету)",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes)
             if reply != QMessageBox.StandardButton.Yes: return
             BUSY.acquire()
             try:
-                cmd = (
-                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
-                    'echo -e "\\033[1;36mУстановка иконок Papirus\\033[0m"\n'
-                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
-                    '\n'
-                    'echo -e "\\033[1;33m→ Обновление списка пакетов...\\033[0m"\n'
-                    'sudo apt-get update\n'
-                    'if [ $? -ne 0 ]; then\n'
-                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось обновить список пакетов\\033[0m"\n'
-                    '    echo ""\n'
-                    '    echo "Нажмите любую клавишу для выхода..."\n'
-                    '    read -n 1\n'
-                    '    exit 1\n'
-                    'fi\n'
-                    '\n'
-                    'echo -e "\\033[1;33m→ Установка icon-theme-Papirus и icon-theme-Papirus-Dark...\\033[0m"\n'
-                    'sudo apt-get install -y icon-theme-Papirus icon-theme-Papirus-Dark\n'
-                    'if [ $? -ne 0 ]; then\n'
-                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось установить иконки Papirus\\033[0m"\n'
-                    '    echo ""\n'
-                    '    echo "Нажмите любую клавишу для выхода..."\n'
-                    '    read -n 1\n'
-                    '    exit 1\n'
-                    'fi\n'
-                    '\n'
-                    'echo -e "\\033[1;32m✅ Иконки Papirus успешно установлены\\033[0m"\n'
-                    'echo ""\n'
-                    'echo "Нажмите любую клавишу для выхода..."\n'
-                    'read -n 1\n'
-                )
-                subprocess.Popen(['konsole', '--separate', '--title', 'Установка иконок Papirus', '-e', 'bash', '-c', cmd]).wait()
+                success = self._install_icons_via_konsole('install_papirus_icons.sh', 'Установка иконок Papirus')
+                if not success:
+                    QMessageBox.critical(self, "Ошибка", "Не удалось установить иконки Papirus.\nПрименение отменено.")
+                    return
             finally:
                 BUSY.release()
             for d in icon_dirs:
@@ -2051,40 +2011,12 @@ class MainWindow(QMainWindow):
 
             BUSY.acquire()
             try:
-                cmd = (
-                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
-                    'echo -e "\\033[1;36mУстановка иконок Papirus\\033[0m"\n'
-                    'echo -e "\\033[1;36m========================================\\033[0m"\n'
-                    '\n'
-                    'echo -e "\\033[1;33m→ Обновление списка пакетов...\\033[0m"\n'
-                    'sudo apt-get update\n'
-                    'if [ $? -ne 0 ]; then\n'
-                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось обновить список пакетов\\033[0m"\n'
-                    '    echo ""\n'
-                    '    echo "Нажмите любую клавишу для выхода..."\n'
-                    '    read -n 1\n'
-                    '    exit 1\n'
-                    'fi\n'
-                    '\n'
-                    'echo -e "\\033[1;33m→ Установка icon-theme-Papirus и icon-theme-Papirus-Dark...\\033[0m"\n'
-                    'sudo apt-get install -y icon-theme-Papirus icon-theme-Papirus-Dark\n'
-                    'if [ $? -ne 0 ]; then\n'
-                    '    echo -e "\\033[1;31m❌ Ошибка: не удалось установить иконки Papirus\\033[0m"\n'
-                    '    echo ""\n'
-                    '    echo "Нажмите любую клавишу для выхода..."\n'
-                    '    read -n 1\n'
-                    '    exit 1\n'
-                    'fi\n'
-                    '\n'
-                    'echo -e "\\033[1;32m✅ Иконки Papirus успешно установлены\\033[0m"\n'
-                    'echo ""\n'
-                    'echo "Нажмите любую клавишу для выхода..."\n'
-                    'read -n 1\n'
-                )
-                process = subprocess.Popen(
-                    ['konsole', '--separate', '--title', 'Установка иконок Papirus', '-e', 'bash', '-c', cmd]
-                )
-                process.wait()
+                success = self._install_icons_via_konsole('install_papirus_icons.sh', 'Установка иконок Papirus')
+                if not success:
+                    QMessageBox.critical(self, "Ошибка",
+                        "Иконки Papirus не были установлены (возможно, нет интернета или вы закрыли терминал).\n"
+                        "Применение отменено.")
+                    return
             finally:
                 BUSY.release()
 

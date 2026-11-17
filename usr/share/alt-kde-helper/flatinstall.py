@@ -581,7 +581,6 @@ class FlatpakInstallPage(QWidget):
 
     def _populate_script_tree(self, apps, installed):
         self.tree.clear()
-
         categories = []
         for entry in apps:
             cat = entry.get('category')
@@ -589,10 +588,8 @@ class FlatpakInstallPage(QWidget):
                 categories[-1][1].append(entry)
             else:
                 categories.append((cat, [entry]))
-
         bold = QFont()
         bold.setBold(True)
-
         for cat_name, entries in categories:
             if cat_name:
                 header = QTreeWidgetItem(["", cat_name, ""])
@@ -605,7 +602,6 @@ class FlatpakInstallPage(QWidget):
                 header.setExpanded(True)
             else:
                 parent = self.tree.invisibleRootItem()
-
             entries_sorted = sorted(entries, key=lambda e: e['name'].lower())
             for entry in entries_sorted:
                 app_id = entry['app_id']
@@ -614,10 +610,10 @@ class FlatpakInstallPage(QWidget):
                 display = f"{name} ({app_id})" if name != app_id else app_id
                 is_installed = app_id in installed
                 desc_text = desc + (" (установлено)" if is_installed else "")
-
                 item = QTreeWidgetItem(["", display, desc_text])
                 item.setData(0, Qt.ItemDataRole.UserRole, app_id)
                 item.setData(0, Qt.ItemDataRole.UserRole + 1, 'app')
+                item.setData(0, Qt.ItemDataRole.UserRole + 2, name)
                 if is_installed:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
                     item.setCheckState(0, Qt.CheckState.Unchecked)
@@ -762,7 +758,7 @@ class FlatpakInstallPage(QWidget):
         for item in self._iter_app_items():
             if item.checkState(0) == Qt.CheckState.Checked:
                 app_id = item.data(0, Qt.ItemDataRole.UserRole)
-                name = self._name_from_display(item.text(1))
+                name = item.data(0, Qt.ItemDataRole.UserRole + 2)
                 selected.append((app_id, name))
         if not selected:
             _kd_error("Не выбрано ни одного приложения.")
@@ -785,11 +781,6 @@ class FlatpakInstallPage(QWidget):
         self._lock_ui(True)
         self.btn_apply.setEnabled(False)
         self._worker = run_in_konsole(sp, "Установка Flatpak", self._on_worker_finished, parent=self)
-
-    def _name_from_display(self, text):
-        if ' (' in text and text.endswith(')'):
-            return text.rsplit(' (', 1)[0]
-        return text
 
     def _build_install_script(self, selected):
         L = ['#!/bin/bash', '']
