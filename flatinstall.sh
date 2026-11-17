@@ -4,6 +4,7 @@
 
 flatpak install -y flathub org.atheme.audacious                 #Audacious;Аудиоплейер в стиле foobar
 flatpak install -y flathub org.audacityteam.Audacity            #Audacity;Аудиоредактор
+flatpak install -y flathub org.audiveris.audiveris              #Audiveris;Оптическое распознавание нот
 flatpak install -y flathub io.github.wartybix.Constrict         #Constrict;Пережимает видео до нужного размера файла
 flatpak install -y flathub org.cutwire.Drift                    #Drift;Очень удобный видеоредактор
 flatpak install -y flathub com.github.Flacon                    #Flacon;Перекодирование аудиофайлов
