@@ -44,7 +44,7 @@ flatpak install -y flathub org.mozilla.firefox                  #Firefox;Фай�
 flatpak install -y flathub app.go2tv.go2tv                      #Go2tv;Трансляция видео на webOS TV
 flatpak install -y flathub com.google.Chrome                    #Google chrome;Гугл хром
 flatpak install -y flathub io.github.tobagin.karere             #Karere;WhatsApp
-flatpak install -y flathub org.nickvision.tubeconverter         #Parabolic;Качалка для ютуба продвинутая
+flatpak install -y flathub org.nickvision.tubeconverter         #Parabolic;Качалка для ютуба продвинутая - может не работать
 flatpak install -y flathub org.qbittorrent.qBittorrent          #Qbittorrent;Один из лучших торрент-клиентов
 flatpak install -y flathub xyz.ketok.Speedtest                  #Speedtest;Оценка скорости интернета
 flatpak install -y flathub io.github.mfat.sshpilot              #Sshpilot;Доступ к vps по ssh и управление файлами
@@ -52,7 +52,7 @@ flatpak install -y flathub org.telegram.desktop                 #Telegram;Тел
 flatpak install -y flathub com.thincast.client                  #Thincast;RDP клиент
 flatpak install -y flathub org.torproject.torbrowser-launcher   #TOR;Загрузчик TOR и запускалка
 flatpak install -y flathub com.vivaldi.Vivaldi                  #Vivaldi;Браузер
-flatpak install -y flathub io.github.aandrew_me.ytdn            #Ytdownloader;Качалка для ютуба продвинутая
+flatpak install -y flathub io.github.aandrew_me.ytdn            #Ytdownloader;Качалка для ютуба продвинутая - если не работает, ставьте через epm play
 flatpak install -y flathub com.rtosta.zapzap                    #Zapzap;WhatsApp
 flatpak install -y flathub org.gnome.NetworkDisplays            #Сетевые дисплеи;Трансляция экрана на андроид ТВ
 
