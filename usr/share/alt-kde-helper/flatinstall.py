@@ -11,10 +11,10 @@ import threading
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QRadioButton, QButtonGroup,
     QPushButton, QTreeWidget, QTreeWidgetItem, QFileDialog, QApplication,
-    QAbstractItemView, QStackedWidget
+    QAbstractItemView, QStackedWidget, QMenu
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize, QUrl
+from PyQt6.QtGui import QIcon, QFont, QDesktopServices
 
 from flatcommon import (
     run_in_konsole, parse_install_script, get_installed_apps,
@@ -24,6 +24,7 @@ from flatcommon import (
 )
 from config import get_scripts_dir
 from busy import BUSY
+from flathubmeta import MetaWorker, get_cached_meta
 
 HOME_FLATINSTALL    = os.path.expanduser('~/.config/alt-kde-helper/flatinstall.sh')
 SCRIPTS_FLATINSTALL = os.path.join(get_scripts_dir(), 'flatinstall.sh')
@@ -110,6 +111,11 @@ class FlatpakInstallPage(QWidget):
         self._loading = False
         self._load_failed = False
 
+        # Метаданные FlatHub (иконки + сайт программы)
+        self._meta_worker = None
+        self._items_by_app = {}
+        self._local_icon_app_ids = set()
+
         self.sync_status = sync_status
         self.restart_sync = restart_sync
         self._popular_loaded_state = None
@@ -154,6 +160,9 @@ class FlatpakInstallPage(QWidget):
         self.tree.setAlternatingRowColors(True)
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.tree.setIconSize(QSize(32, 32))
+        self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self._on_context_menu)
         layout.addWidget(self.tree, 1)
 
         # --- Label размеров ---
@@ -313,6 +322,17 @@ class FlatpakInstallPage(QWidget):
         self._selected_path = None
         self._loaded = None
         self._popular_loaded_state = None
+        # Останавливаем старый мета-воркер: его результаты относятся к прошлому списку
+        if self._meta_worker is not None:
+            self._meta_worker.requestInterruption()
+            self._meta_worker.wait(2000)
+            try:
+                self._meta_worker.meta_ready.disconnect()
+            except Exception:
+                pass
+            self._meta_worker = None
+        self._items_by_app = {}
+        self._local_icon_app_ids = set()
         self.tree.clear()
         self._apply_mode_state()
 
@@ -350,10 +370,10 @@ class FlatpakInstallPage(QWidget):
         # Ширина таблицы во всех режимах = 850
         if m in (self.MODE_FILE, self.MODE_POPULAR):
             self.tree.setColumnCount(3)
-            self.tree.setHeaderLabels(["Выбор", "Название (ID)", "Описание"])
+            self.tree.setHeaderLabels(["Выбор", "Название", "Описание"])
             self.tree.setColumnWidth(0, 70)
-            self.tree.setColumnWidth(1, 400)
-            self.tree.setColumnWidth(2, 380)
+            self.tree.setColumnWidth(1, 280)
+            self.tree.setColumnWidth(2, 500)
         elif m == self.MODE_ARCHIVE_DATA:
             self.tree.setColumnCount(2)
             self.tree.setHeaderLabels(["Выбор", "Приложение"])
@@ -513,6 +533,18 @@ class FlatpakInstallPage(QWidget):
     def _start_load(self, kind, path):
         if self._loader is not None and self._loader.isRunning():
             return
+        # Останавливаем старый мета-воркер: список меняется, старые результаты не нужны
+        if self._meta_worker is not None:
+            self._meta_worker.requestInterruption()
+            self._meta_worker.wait(2000)
+            try:
+                self._meta_worker.meta_ready.disconnect()
+            except Exception:
+                pass
+            self._meta_worker = None
+        self._items_by_app = {}
+        self._local_icon_app_ids = set()
+
         self._loading = True
         self._load_failed = False
         self._loaded = None
@@ -590,6 +622,9 @@ class FlatpakInstallPage(QWidget):
                 categories.append((cat, [entry]))
         bold = QFont()
         bold.setBold(True)
+
+        apps_to_fetch = []
+
         for cat_name, entries in categories:
             if cat_name:
                 header = QTreeWidgetItem(["", cat_name, ""])
@@ -607,10 +642,11 @@ class FlatpakInstallPage(QWidget):
                 app_id = entry['app_id']
                 name = entry['name']
                 desc = entry.get('desc') or ''
-                display = f"{name} ({app_id})" if name != app_id else app_id
+                display = name
                 is_installed = app_id in installed
                 desc_text = desc + (" (установлено)" if is_installed else "")
-                item = QTreeWidgetItem(["", display, desc_text])
+                # Один пробел перед display — зазор между иконкой и текстом
+                item = QTreeWidgetItem(["", " " + display, desc_text])
                 item.setData(0, Qt.ItemDataRole.UserRole, app_id)
                 item.setData(0, Qt.ItemDataRole.UserRole + 1, 'app')
                 item.setData(0, Qt.ItemDataRole.UserRole + 2, name)
@@ -621,8 +657,106 @@ class FlatpakInstallPage(QWidget):
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable
                                    | Qt.ItemFlag.ItemIsEnabled)
                     item.setCheckState(0, Qt.CheckState.Unchecked)
+
+                # Тултип на колонке «Описание» — полный текст (может не влезть по ширине)
+                tip = desc_text.strip()
+                if tip:
+                    item.setToolTip(2, tip)
+
+                self._items_by_app[app_id] = item
+
+                # Иконка: для установленных сначала локальная, иначе из кэша FlatHub
+                local_icon_found = False
+                if is_installed:
+                    theme_icon = QIcon.fromTheme(app_id)
+                    if not theme_icon.isNull():
+                        item.setIcon(1, theme_icon)
+                        local_icon_found = True
+                    if not local_icon_found:
+                        for candidate in (
+                            os.path.expanduser(
+                                f'~/.local/share/flatpak/exports/share/icons/hicolor/128x128/apps/{app_id}.png'),
+                            f'/var/lib/flatpak/exports/share/icons/hicolor/128x128/apps/{app_id}.png',
+                            os.path.expanduser(
+                                f'~/.local/share/flatpak/exports/share/icons/hicolor/64x64/apps/{app_id}.png'),
+                            f'/var/lib/flatpak/exports/share/icons/hicolor/64x64/apps/{app_id}.png',
+                        ):
+                            if os.path.isfile(candidate):
+                                item.setIcon(1, QIcon(candidate))
+                                local_icon_found = True
+                                break
+                    if local_icon_found:
+                        self._local_icon_app_ids.add(app_id)
+
+                cached_icon, cached_homepage = get_cached_meta(app_id)
+                if cached_homepage:
+                    item.setData(0, Qt.ItemDataRole.UserRole + 3, cached_homepage)
+
+                if not local_icon_found:
+                    if cached_icon:
+                        item.setIcon(1, QIcon(cached_icon))
+                    else:
+                        item.setIcon(1, QIcon.fromTheme("application-x-executable"))
+
+                need_icon = not local_icon_found and not cached_icon
+                need_homepage = not cached_homepage
+                if need_icon or need_homepage:
+                    apps_to_fetch.append(app_id)
+
                 parent.addChild(item) if parent is not self.tree.invisibleRootItem() \
                     else self.tree.addTopLevelItem(item)
+
+        if apps_to_fetch:
+            self._start_meta_loader(apps_to_fetch)
+
+    # ---------- фоновый загрузчик иконок и меты ----------
+
+    def _start_meta_loader(self, app_ids):
+        self._meta_worker = MetaWorker(app_ids)
+        self._meta_worker.meta_ready.connect(self._on_meta_ready)
+        self._meta_worker.finished.connect(self._on_meta_finished)
+        self._meta_worker.start()
+
+    def _on_meta_ready(self, app_id, icon_path, homepage):
+        item = self._items_by_app.get(app_id)
+        if item is None:
+            return
+        # Иконку ставим только если локальная не найдена (не перезаписываем
+        # ту, что уже взята из системы или из кэша)
+        if app_id not in self._local_icon_app_ids:
+            if icon_path and os.path.isfile(icon_path):
+                item.setIcon(1, QIcon(icon_path))
+        if homepage:
+            item.setData(0, Qt.ItemDataRole.UserRole + 3, homepage)
+
+    def _on_meta_finished(self):
+        if self.sender() is self._meta_worker:
+            self._meta_worker = None
+
+    # ---------- контекстное меню ----------
+
+    def _on_context_menu(self, pos):
+        item = self.tree.itemAt(pos)
+        if item is None:
+            return
+        if item.data(0, Qt.ItemDataRole.UserRole + 1) != 'app':
+            return
+
+        app_id = item.data(0, Qt.ItemDataRole.UserRole)
+        if not app_id:
+            return
+        homepage = item.data(0, Qt.ItemDataRole.UserRole + 3)
+
+        menu = QMenu(self)
+        act_site = menu.addAction("Открыть сайт программы")
+        act_site.setEnabled(bool(homepage))
+        act_flathub = menu.addAction("Открыть на Flathub")
+
+        chosen = menu.exec(self.tree.viewport().mapToGlobal(pos))
+        if chosen is act_site and homepage:
+            QDesktopServices.openUrl(QUrl(homepage))
+        elif chosen is act_flathub:
+            QDesktopServices.openUrl(QUrl(f"https://flathub.org/apps/{app_id}"))
 
     def _populate_data_tree(self, manifest, installed):
         self.tree.clear()
@@ -639,7 +773,7 @@ class FlatpakInstallPage(QWidget):
         for a in filtered:
             app_id = a['id']
             name = a.get('name', app_id)
-            display = f"{name} ({app_id})" if name != app_id else app_id
+            display = name
             item = QTreeWidgetItem(["", display])
             item.setData(0, Qt.ItemDataRole.UserRole, app_id)
             item.setData(0, Qt.ItemDataRole.UserRole + 1, 'app')
@@ -658,7 +792,7 @@ class FlatpakInstallPage(QWidget):
         for a in apps_sorted:
             app_id = a['id']
             name = a.get('name', app_id)
-            display = f"{name} ({app_id})" if name != app_id else app_id
+            display = name
             item = QTreeWidgetItem([display])
             item.setData(0, Qt.ItemDataRole.UserRole, app_id)
             item.setData(0, Qt.ItemDataRole.UserRole + 1, 'app')

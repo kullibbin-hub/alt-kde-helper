@@ -5,14 +5,22 @@ echo -e "\033[1;36mОбновление eepm\033[0m"
 echo -e "\033[1;36m========================================\033[0m"
 
 ERROR=0
+# Ветка репозитория etersoft: для Сизифа используется "Sisyphus", для стабильных веток "p<версия>"
+if grep -qi 'sisyphus' /etc/os-release; then
+    VER="Sisyphus"
+else
+    VER=$(grep -E '^VERSION_ID=' /etc/os-release | cut -d= -f2 | tr -d '"' | cut -d. -f1)
+fi
 
-# Ветка репозитория etersoft берётся из версии системы (11 -> p11, 12 -> p12)
-VER=$(grep -E '^VERSION_ID=' /etc/os-release | cut -d= -f2 | tr -d '"' | cut -d. -f1)
 if [ -z "$VER" ]; then
     echo -e "\033[1;31m❌ Не удалось определить версию системы\033[0m"
     ERROR=1
 else
-    REMOTE_URL="https://download.etersoft.ru/pub/Korinf/x86_64/ALTLinux/p${VER}/"
+    if [ "$VER" = "Sisyphus" ]; then
+        REMOTE_URL="https://download.etersoft.ru/pub/Korinf/x86_64/ALTLinux/Sisyphus/"
+    else
+        REMOTE_URL="https://download.etersoft.ru/pub/Korinf/x86_64/ALTLinux/p${VER}/"
+    fi
 
     echo -e "\033[1;33m→ Получение информации о версиях...\033[0m"
     PAGE=$(wget -qO- --timeout=10 "$REMOTE_URL")

@@ -22,6 +22,7 @@ from flatbackup import FlatpakBackupPage
 from flatinstall import FlatpakInstallPage
 from busy import BUSY
 import flatsync
+from appimageinstall import AppImageInstallPage
 
 # Путь к вшитому пресету панели
 PRESET_FILE_PATH = '/opt/alt-kde-helper/usr/share/alt-kde-helper/plasma-org.kde.plasma.desktop-appletsrc'
@@ -36,9 +37,14 @@ def get_current_version():
 def get_config_dir():
     """Возвращает путь к папке конфигурации программы"""
     return os.path.expanduser('~/.config/alt-kde-helper')
+
 HOME_FLATINSTALL    = os.path.join(get_config_dir(), 'flatinstall.sh')
 MARKER_PATH         = os.path.join(get_config_dir(), '.flatsync_version')
 SCRIPTS_FLATINSTALL = os.path.join(get_scripts_dir(), 'flatinstall.sh')
+
+HOME_APPIMAGES      = os.path.join(get_config_dir(), 'appimages')
+MARKER_APPIMAGES    = os.path.join(get_config_dir(), '.appimages_version')
+SCRIPTS_APPIMAGES   = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'appimages')
 
 
 def get_packages_file_path():
@@ -139,17 +145,6 @@ def ensure_packages_file(parent=None):
         shutil.copy2(latest_old_file, target_file)
 
     return target_file
-
-def copy_and_patch(src, dst, actions_dir):
-    """Копирует скрипт, заменяя жестко прописанный путь /tmp/alt-kde-helper-actions
-    на актуальный путь для текущего пользователя."""
-    with open(src, 'r', encoding='utf-8') as f:
-        content = f.read()
-    # Заменяем старый путь на новый
-    content = content.replace('/tmp/alt-kde-helper-actions', actions_dir)
-    with open(dst, 'w', encoding='utf-8') as f:
-        f.write(content)
-    os.chmod(dst, 0o755)
 
 class ActionWorker(QThread):
     finished = pyqtSignal()
@@ -871,7 +866,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Alt KDE Helper")
         self.setObjectName("alt-kde-helper")
         self.setMinimumSize(800, 600)
-        self.resize(1070, 710)
+        self.resize(1090, 710)
 
         clear_actions_dir()
 
@@ -883,7 +878,7 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(0)
 
         left_panel = QWidget()
-        left_panel.setFixedWidth(180)
+        left_panel.setFixedWidth(200)
         left_panel.setObjectName("LeftPanel")
 
         left_panel_layout = QVBoxLayout()
@@ -985,6 +980,15 @@ class MainWindow(QMainWindow):
         self.tab_btn_flatpak_install.clicked.connect(lambda: self.switch_tab(4))
         left_panel_layout.addWidget(self.tab_btn_flatpak_install)
 
+        self.tab_btn_appimage = QPushButton(" Установка AppImage")
+        self.tab_btn_appimage.setProperty("class", "TabButton")
+        self.tab_btn_appimage.setCheckable(True)
+        self.tab_btn_appimage.setMinimumHeight(56)
+        self.tab_btn_appimage.setIcon(QIcon.fromTheme("application-x-executable", QIcon.fromTheme("package-install")))
+        self.tab_btn_appimage.setIconSize(QSize(22, 22))
+        self.tab_btn_appimage.clicked.connect(lambda: self.switch_tab(5))
+        left_panel_layout.addWidget(self.tab_btn_appimage)
+
         left_panel_layout.addStretch()
         left_panel_layout.addStretch()
 
@@ -1050,16 +1054,19 @@ class MainWindow(QMainWindow):
             restart_sync=self._restart_sync,
         )
 
+        self.appimage_page = AppImageInstallPage()
         self.stack_layout.addWidget(self.maintenance_page)
         self.stack_layout.addWidget(self.fixes_page)
         self.stack_layout.addWidget(self.appearance_page)
         self.stack_layout.addWidget(self.flatpak_backup_page)
         self.stack_layout.addWidget(self.flatpak_install_page)
+        self.stack_layout.addWidget(self.appimage_page)
 
         self.fixes_page.setVisible(False)
         self.appearance_page.setVisible(False)
         self.flatpak_backup_page.setVisible(False)
         self.flatpak_install_page.setVisible(False)
+        self.appimage_page.setVisible(False)
 
         self.stack.setLayout(self.stack_layout)
         right_layout.addWidget(self.stack, 1)
@@ -1114,7 +1121,8 @@ class MainWindow(QMainWindow):
             "11_flatpak_home_access_action.sh",
             "12_fix_copy_indicator_action.sh",
             "25_create_console_profile.sh",
-            "13_increase_fonts_action.sh"
+            "13_increase_fonts_action.sh",
+            "95_clean_cache_action.sh",
         ]
         self.recommended_state = False
         self.help_dialog = None
@@ -1224,6 +1232,7 @@ class MainWindow(QMainWindow):
         self.appearance_page.setVisible(index == 2)
         self.flatpak_backup_page.setVisible(index == 3)
         self.flatpak_install_page.setVisible(index == 4)
+        self.appimage_page.setVisible(index == 5)
 
         tab_buttons = [
             self.tab_btn_maintenance,
@@ -1231,13 +1240,14 @@ class MainWindow(QMainWindow):
             self.tab_btn_appearance,
             self.tab_btn_flatpak_backup,
             self.tab_btn_flatpak_install,
+            self.tab_btn_appimage,
         ]
         for i, btn in enumerate(tab_buttons):
             btn.setProperty("class", "TabButtonActive" if index == i else "TabButton")
             btn.style().unpolish(btn)
             btn.style().polish(btn)
 
-        # Нижняя панель не имеет смысла на вкладках Flatpak
+        # Нижняя панель не имеет смысла на вкладках Flatpak и AppImage
         show_bottom = index < 3
         self.recommended_btn.setVisible(show_bottom)
         self.apply_btn.setVisible(show_bottom)
@@ -1320,12 +1330,12 @@ class MainWindow(QMainWindow):
                     script_src = os.path.join(scripts_dir, card.script_name)
                     action_path = os.path.join(actions_dir, card.script_name)
                     if os.path.exists(script_src) and not os.path.exists(action_path):
-                        copy_and_patch(script_src, action_path, actions_dir)
+                        shutil.copy2(script_src, action_path)
                 if hasattr(card, 'rollback_cb') and card.rollback_cb.isChecked():
                     script_src = os.path.join(scripts_dir, card.rollback_script_name)
                     action_path = os.path.join(actions_dir, card.rollback_script_name)
                     if os.path.exists(script_src) and not os.path.exists(action_path):
-                        copy_and_patch(script_src, action_path, actions_dir)
+                        shutil.copy2(script_src, action_path)
 
         update_system_checked = False
         for card in self.maintenance_page.cards:
@@ -1335,18 +1345,21 @@ class MainWindow(QMainWindow):
                 break
 
         if update_system_checked:
-            for pkg, script in [("eepm", "06_update_eepm_action.sh"), ("flatpak", "10_update_flatpak_action.sh"), ("stplr", "20_update_stplr_action.sh")]:
-                if subprocess.run(f"rpm -q {pkg}", shell=True, capture_output=True).returncode == 0:
-                    script_src = os.path.join(scripts_dir, script)
-                    action_path = os.path.join(actions_dir, script)
-                    if os.path.exists(script_src) and not os.path.exists(action_path):
-                        copy_and_patch(script_src, action_path, actions_dir)
+            # eepm / flatpak / stplr сюда НЕ добавляем:
+            # их install-скрипты сами копируют и запускают update
+            # (см. cp+bash внутри 06_install_eepm_action.sh и аналогов).
+            # Иначе update попадает в snapshotted glob-список ActionWorker,
+            # install успевает его выполнить и удалить, а bash-цикл
+            # затем падает с "No such file or directory".
+            # Обновление для этих пакетов пользователь ставит
+            # соответствующей галочкой в GUI ("Установка или обновление eepm" и т.п.).
 
+            # AppImage — отдельно: у него нет install-карточки, только update.
             update_script = "30_update_appimage_action.sh"
             script_src = os.path.join(scripts_dir, update_script)
             action_path = os.path.join(actions_dir, update_script)
             if os.path.exists(script_src) and not os.path.exists(action_path):
-                copy_and_patch(script_src, action_path, actions_dir)
+                shutil.copy2(script_src, action_path)
 
         mirror_card = self.get_mirror_card()
         if mirror_card:
@@ -1355,7 +1368,7 @@ class MainWindow(QMainWindow):
                 script_src = os.path.join(scripts_dir, selected_script)
                 action_path = os.path.join(actions_dir, selected_script)
                 if os.path.exists(script_src) and not os.path.exists(action_path):
-                    copy_and_patch(script_src, action_path, actions_dir)
+                    shutil.copy2(script_src, action_path)
 
         if self._has_flatpak():
             flathub_mirror_card = self.get_flathub_mirror_card()
@@ -1365,7 +1378,7 @@ class MainWindow(QMainWindow):
                     script_src = os.path.join(scripts_dir, selected_script)
                     action_path = os.path.join(actions_dir, selected_script)
                     if os.path.exists(script_src) and not os.path.exists(action_path):
-                        copy_and_patch(script_src, action_path, actions_dir)
+                        shutil.copy2(script_src, action_path)
 
         action_files = [f for f in os.listdir(actions_dir) if f.endswith('.sh') and f != '99_final.sh']
         if not action_files:
@@ -1375,7 +1388,7 @@ class MainWindow(QMainWindow):
         final_script_src = os.path.join(scripts_dir, '99_final.sh')
         final_script_dst = os.path.join(actions_dir, '99_final.sh')
         if os.path.exists(final_script_src) and not os.path.exists(final_script_dst):
-            copy_and_patch(final_script_src, final_script_dst, actions_dir)
+            shutil.copy2(final_script_src, final_script_dst)
 
         self.current_worker = ActionWorker(actions_dir)
         self.current_worker.finished.connect(self.on_actions_finished)
@@ -1411,7 +1424,7 @@ class MainWindow(QMainWindow):
             final_script_src = os.path.join(scripts_dir, '99_final.sh')
             final_script_dst = os.path.join(actions_dir, '99_final.sh')
             if os.path.exists(final_script_src) and not os.path.exists(final_script_dst):
-                copy_and_patch(final_script_src, final_script_dst, actions_dir)
+                shutil.copy2(final_script_src, final_script_dst)
             self.current_worker = ActionWorker(actions_dir)
             self.current_worker.finished.connect(self.on_actions_finished)
             self.current_worker.start()
@@ -1471,7 +1484,7 @@ class MainWindow(QMainWindow):
             "ALT Linux 11 с рабочим столом KDE6<br><br>"
             "Автор: kullibbin<br>"
             "<a href='mailto:kullibbin@gmail.com'>kullibbin@gmail.com</a><br><br>"
-            "<a href='https://t.me/Alt_KDE_Helper'>Telegram-канал</a> (новости и поддержка)<br><br>"  # <--- Вот здесь добавлен <br>
+            "<a href='https://t.me/Alt_KDE_Helper'>Telegram-канал</a> (новости и поддержка)<br><br>"
             "<a href='https://github.com/kullibbin-hub/alt-kde-helper'>GitHub</a>")
 
     def show_donate_dialog(self):
@@ -1514,7 +1527,6 @@ class MainWindow(QMainWindow):
 
             qr_hint = QLabel("Отсканируйте QR-код в приложении вашего банка (СБП)")
             qr_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            # Убрали setStyleSheet, теперь цвет обычный (palette(text))
             layout.addWidget(qr_hint)
         else:
             # Если картинки нет, выводим заглушку

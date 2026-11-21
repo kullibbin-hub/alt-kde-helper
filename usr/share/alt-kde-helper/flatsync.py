@@ -1,4 +1,5 @@
 # flatsync.py - синхронизация flatinstall.sh с GitHub
+
 import os
 import urllib.request
 
@@ -7,12 +8,10 @@ TIMEOUT = 10
 MIN_SIZE = 100
 USER_AGENT = "Alt-KDE-Helper/FlatSync"
 
-
 def _http_get(url, timeout=TIMEOUT):
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
-
 
 def _read_bytes(path):
     try:
@@ -21,7 +20,6 @@ def _read_bytes(path):
     except Exception:
         return None
 
-
 def _atomic_write_bytes(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
@@ -29,6 +27,20 @@ def _atomic_write_bytes(path, data):
         f.write(data)
     os.replace(tmp, path)
 
+def _is_valid_bash_script(data):
+    """Проверяет, что данные — это bash-скрипт, а не HTML-ошибка."""
+    try:
+        text = data[:200].decode('utf-8', errors='ignore').strip()
+        if not text.startswith('#!'):
+            return False
+        first_line = text.split('\n')[0]
+        if 'bash' not in first_line and 'sh' not in first_line:
+            return False
+        if '<html' in text.lower() or '<!doctype' in text.lower():
+            return False
+        return True
+    except Exception:
+        return False
 
 def _read_marker(path):
     try:
@@ -36,7 +48,6 @@ def _read_marker(path):
             return f.read().strip()
     except Exception:
         return ""
-
 
 def _write_marker(path, version):
     try:
@@ -46,10 +57,8 @@ def _write_marker(path, version):
     except Exception:
         pass
 
-
 def do_sync(version, on_state, scripts_path, home_path, marker_path):
     """Синхронизация flatinstall.sh.
-
     1. Если программа обновилась (маркер != version) — копирует из scripts_path в home_path.
     2. on_state('checking'), скачивает RAW_URL с таймаутом 10 с.
     3. Совпадает с home_path → on_state('unchanged').
@@ -74,7 +83,7 @@ def do_sync(version, on_state, scripts_path, home_path, marker_path):
         on_state('failed')
         return
 
-    if len(data) < MIN_SIZE:
+    if len(data) < MIN_SIZE or not _is_valid_bash_script(data):
         on_state('failed')
         return
 
@@ -88,4 +97,5 @@ def do_sync(version, on_state, scripts_path, home_path, marker_path):
     except Exception:
         on_state('failed')
         return
+
     on_state('updated')

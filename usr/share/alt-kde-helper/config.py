@@ -167,8 +167,7 @@ def get_state_dir():
     return state_dir
 
 def get_actions_dir():
-    import tempfile
-    actions_dir = os.path.join(tempfile.gettempdir(), f'alt-kde-helper-actions-{os.getuid()}')
+    actions_dir = '/tmp/alt-kde-helper-actions'
     os.makedirs(actions_dir, exist_ok=True)
     return actions_dir
 
