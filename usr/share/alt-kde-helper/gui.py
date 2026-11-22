@@ -161,7 +161,8 @@ class ActionWorker(QThread):
             self.finished.emit()
             return
 
-        cmd = 'for script in ' + ' '.join(f'"{s}"' for s in scripts) + '; do bash "$script"; done'
+        cmd = 'for script in ' + ' '.join(f'"{s}"' for s in scripts) + '; do [ -f "$script" ] || continue; bash "$script"; done'
+
 
         BUSY.acquire()
         try:
@@ -1345,21 +1346,17 @@ class MainWindow(QMainWindow):
                 break
 
         if update_system_checked:
-            # eepm / flatpak / stplr сюда НЕ добавляем:
-            # их install-скрипты сами копируют и запускают update
-            # (см. cp+bash внутри 06_install_eepm_action.sh и аналогов).
-            # Иначе update попадает в snapshotted glob-список ActionWorker,
-            # install успевает его выполнить и удалить, а bash-цикл
-            # затем падает с "No such file or directory".
-            # Обновление для этих пакетов пользователь ставит
-            # соответствующей галочкой в GUI ("Установка или обновление eepm" и т.п.).
+            for update_script in (
+                "06_update_eepm_action.sh",
+                "10_update_flatpak_action.sh",
+                "20_update_stplr_action.sh",
+                "30_update_appimage_action.sh",
+            ):
+                script_src = os.path.join(scripts_dir, update_script)
+                action_path = os.path.join(actions_dir, update_script)
+                if os.path.exists(script_src) and not os.path.exists(action_path):
+                    shutil.copy2(script_src, action_path)
 
-            # AppImage — отдельно: у него нет install-карточки, только update.
-            update_script = "30_update_appimage_action.sh"
-            script_src = os.path.join(scripts_dir, update_script)
-            action_path = os.path.join(actions_dir, update_script)
-            if os.path.exists(script_src) and not os.path.exists(action_path):
-                shutil.copy2(script_src, action_path)
 
         mirror_card = self.get_mirror_card()
         if mirror_card:

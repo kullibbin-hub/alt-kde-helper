@@ -4,6 +4,12 @@ echo -e "\033[1;36m========================================\033[0m"
 echo -e "\033[1;36mОбновление eepm\033[0m"
 echo -e "\033[1;36m========================================\033[0m"
 
+if ! command -v epm >/dev/null 2>&1; then
+    echo -e "\033[1;33m⚠ eepm не установлен — обновление пропущено\033[0m"
+    rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
+    exit 0
+fi
+
 ERROR=0
 # Ветка репозитория etersoft: для Сизифа используется "Sisyphus", для стабильных веток "p<версия>"
 if grep -qi 'sisyphus' /etc/os-release; then
