@@ -194,7 +194,7 @@ def get_version():
             return f.read().strip()
 
     # Если не нашли, пробуем в корне проекта (для разработки)
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     version_file = os.path.join(base_dir, 'version.txt')
     try:
         with open(version_file, 'r', encoding='utf-8') as f:

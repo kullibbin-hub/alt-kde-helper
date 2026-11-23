@@ -386,7 +386,7 @@ class FlatpakBackupPage(QWidget):
             return
         self.size_label.setStyleSheet("")
         if self.radio_full.isChecked():
-            est_prog = (self._raw_system + self._raw_user) * 0.4
+            est_prog = (self._raw_system + self._raw_user) * 0.65
             est_data = sum(self._raw_data.values()) * 0.65
             est = est_prog + est_data
             total_s, prog_s, data_s = format_sizes(est, est_prog, est_data)
@@ -555,7 +555,7 @@ class FlatpakBackupPage(QWidget):
             apps_with_data = selected
             apps_to_backup = list(selected)
 
-        if not apps_with_data:
+        if not apps_with_data and backup_type != 'full':
             QMessageBox.warning(
                 self, "Нет данных",
                 "Нет приложений с данными для бэкапа."
@@ -693,8 +693,8 @@ class FlatpakBackupPage(QWidget):
         L.append('')
         L.append(f'mkdir -p "{t}"')
         L.append(f'if [ ! -d "{t}" ]; then')
-        L.append(f'    echo -e "{{C_RED}}❌ Не удалось создать папку бэкапа: {t}{{C_RESET}}"')
-        L.append(f'    echo -e "{{C_YELLOW}}Нажмите любую клавишу для выхода...{{C_RESET}}"')
+        L.append(f'    echo -e "{C_RED}❌ Не удалось создать папку бэкапа: {t}{C_RESET}"')
+        L.append(f'    echo -e "{C_YELLOW}Нажмите любую клавишу для выхода...{C_RESET}"')
         L.append('    read -n1')
         L.append('    exit 1')
         L.append('fi')

@@ -223,6 +223,7 @@ class FlatpakInstallPage(QWidget):
         self.btn_select_all.clicked.connect(self._on_select_all)
         self.btn_select_none.clicked.connect(self._on_select_none)
         self.btn_apply.clicked.connect(self._on_apply)
+        self.tree.itemChanged.connect(self._on_data_tree_changed)
 
         BUSY.changed.connect(self._on_busy_changed)
 
@@ -467,11 +468,22 @@ class FlatpakInstallPage(QWidget):
         if state in (None, 'checking'):
             self._show_status("Проверка обновления списка программ.....", "red")
             self._popular_loaded_state = None
+            if self._meta_worker is not None:
+                try:
+                    self._meta_worker.meta_ready.disconnect()
+                except Exception:
+                    pass
+                self._meta_worker.requestInterruption()
+                self._meta_worker.wait(2000)
+                self._meta_worker = None
+            self._items_by_app = {}
+            self._local_icon_app_ids = set()
             self.tree.clear()
             self._loaded = None
             self._lock_ui(True)
             self._update_apply_enabled()
             return
+
 
         self._show_status_for_state(state)
 
@@ -781,7 +793,6 @@ class FlatpakInstallPage(QWidget):
             item.setCheckState(0, Qt.CheckState.Unchecked)
             self.tree.addTopLevelItem(item)
 
-        self.tree.itemChanged.connect(self._on_data_tree_changed)
         self._update_data_label()
 
     def _populate_full_tree(self, manifest):
@@ -1272,10 +1283,10 @@ class FlatpakInstallPage(QWidget):
 
         fail_tail = [
             '    echo ""',
-            f'    echo -e "{{C_YELLOW}}Наиболее вероятная причина — нехватка свободного места на диске:{{C_RESET}}"',
-            f'    echo -e "{{C_YELLOW}}какая-то программа скачивает или создаёт файлы, которые заняли место.{{C_RESET}}"',
-            f'    echo -e "{{C_CYAN}}Ваш архив цел. Перезагрузите компьютер и повторите восстановление.{{C_RESET}}"',
-            f'    echo -e "{{C_YELLOW}}Нажмите любую клавишу для выхода...{{C_RESET}}"',
+            f'    echo -e "{C_YELLOW}Наиболее вероятная причина — нехватка свободного места на диске:{C_RESET}"',
+            f'    echo -e "{C_YELLOW}какая-то программа скачивает или создаёт файлы, которые заняли место.{C_RESET}"',
+            f'    echo -e "{C_CYAN}Ваш архив цел. Перезагрузите компьютер и повторите восстановление.{C_RESET}"',
+            f'    echo -e "{C_YELLOW}Нажмите любую клавишу для выхода...{C_RESET}"',
             '    read -n1',
             '    exit 1',
             'fi',
