@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # flatinstall.py - страница установки / восстановления Flatpak
 
 import os
@@ -1100,6 +1101,7 @@ class FlatpakInstallPage(QWidget):
         L.append(f'echo -e "{C_YELLOW}→ Удаление текущих данных выбранных приложений...{C_RESET}"')
         L.append(f'rm -rf {rm_targets}')
         L.append('')
+        L.append('mkdir -p ~/.var/app')
         L.append(f'echo -e "{C_YELLOW}→ Распаковка данных в ~/.var/app...{C_RESET}"')
         L.append(f'TOTAL={total_bytes}')
         L.append('if [ "$TOTAL" -le 0 ]; then TOTAL=1; fi')
@@ -1344,6 +1346,7 @@ class FlatpakInstallPage(QWidget):
             L.append(f'echo -e "{C_YELLOW}→ Удаление текущих данных приложений...{C_RESET}"')
             L.append(f'rm -rf {data_rm}')
             L.append('')
+            L.append('mkdir -p ~/.var/app')
             L.append(f'echo -e "{C_YELLOW}→ Распаковка данных в ~/.var/app...{C_RESET}"')
             L.append(f'TOTAL={data_total}')
             L.append('if [ "$TOTAL" -le 0 ]; then TOTAL=1; fi')

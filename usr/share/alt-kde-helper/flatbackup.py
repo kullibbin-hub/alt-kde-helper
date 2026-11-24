@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # flatbackup.py - страница создания бэкапа Flatpak
 
 import os
@@ -386,13 +387,13 @@ class FlatpakBackupPage(QWidget):
             return
         self.size_label.setStyleSheet("")
         if self.radio_full.isChecked():
-            est_prog = (self._raw_system + self._raw_user) * 0.65
+            est_prog = (self._raw_system + self._raw_user) * 0.5
             est_data = sum(self._raw_data.values()) * 0.65
             est = est_prog + est_data
             total_s, prog_s, data_s = format_sizes(est, est_prog, est_data)
             self.size_label.setText(
-                f"Оценка размера бэкапа: ~{total_s} "
-                f"(программы ~{prog_s}, данные ~{data_s})\n"
+                f"Оценка размера бэкапа, не более: {total_s} "
+                f"(программы {prog_s}, данные {data_s})\n"
                 f"Свободно в домашнем разделе: ~{human_size(self._free_home)}"
             )
         elif self.radio_data.isChecked():
@@ -404,7 +405,7 @@ class FlatpakBackupPage(QWidget):
                     selected_sum += self._raw_data.get(app_id, 0)
             est = selected_sum * 0.65
             self.size_label.setText(
-                f"Оценка размера бэкапа данных: ~{human_size(est)}\n"
+                f"Оценка размера бэкапа данных, не более: {human_size(est)}\n"
                 f"Свободно в домашнем разделе: ~{human_size(self._free_home)}"
             )
 
@@ -565,7 +566,7 @@ class FlatpakBackupPage(QWidget):
         raw_system = self._raw_system if backup_type == 'full' else 0
         raw_user = self._raw_user if backup_type == 'full' else 0
         raw_data_sum = sum(self._raw_data.get(a, 0) for a in apps_with_data)
-        estimate = (raw_system + raw_user) * 0.65 + raw_data_sum * 0.65
+        estimate = (raw_system + raw_user) * 0.5 + raw_data_sum * 0.65
         need = int(estimate * 1.2)
         free = df_free(parent_dir)
         if need > free:
@@ -573,7 +574,7 @@ class FlatpakBackupPage(QWidget):
             QMessageBox.critical(
                 self, "Недостаточно места",
                 f"Недостаточно свободного места на разделе назначения.\n\n"
-                f"Требуется: ~{need_s}\n"
+                f"Требуется (с запасом): ~{need_s}\n"
                 f"Свободно: {free_s}\n\n"
                 f"Освободите место или выберите другой раздел."
             )
