@@ -12,21 +12,30 @@ fi
 
 ERROR=0
 # Ветка репозитория etersoft: для Сизифа используется "Sisyphus", для стабильных веток "p<версия>"
-if grep -qi 'sisyphus' /etc/os-release; then
-    VER="Sisyphus"
+RELEASE_FILE="/etc/altlinux-release"
+if [ ! -f "$RELEASE_FILE" ]; then
+    echo -e "\033[1;31m❌ Ошибка: не найден файл $RELEASE_FILE\033[0m"
+    VER=""
 else
-    VER=$(grep -E '^VERSION_ID=' /etc/os-release | cut -d= -f2 | tr -d '"' | cut -d. -f1)
+    RELEASE_INFO=$(cat "$RELEASE_FILE")
+    echo -e "\033[1;33m→ Обнаружена система: $RELEASE_INFO\033[0m"
+
+    if echo "$RELEASE_INFO" | grep -qi "Sisyphus"; then
+        VER="Sisyphus"
+    elif echo "$RELEASE_INFO" | grep -q "ALT" && echo "$RELEASE_INFO" | grep -q "11"; then
+        VER="p11"
+    elif echo "$RELEASE_INFO" | grep -q "ALT" && echo "$RELEASE_INFO" | grep -q "12"; then
+        VER="p12"
+    else
+        VER=""
+    fi
 fi
 
 if [ -z "$VER" ]; then
     echo -e "\033[1;31m❌ Не удалось определить версию системы\033[0m"
     ERROR=1
 else
-    if [ "$VER" = "Sisyphus" ]; then
-        REMOTE_URL="https://download.etersoft.ru/pub/Korinf/x86_64/ALTLinux/Sisyphus/"
-    else
-        REMOTE_URL="https://download.etersoft.ru/pub/Korinf/x86_64/ALTLinux/p${VER}/"
-    fi
+    REMOTE_URL="https://download.etersoft.ru/pub/Korinf/x86_64/ALTLinux/${VER}/"
 
     echo -e "\033[1;33m→ Получение информации о версиях...\033[0m"
     PAGE=$(wget -qO- --timeout=10 "$REMOTE_URL")

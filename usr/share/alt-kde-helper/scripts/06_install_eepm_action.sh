@@ -12,7 +12,7 @@ UPDATE_SCRIPT="06_update_eepm_action.sh"
 UPDATE_SCRIPT_PATH="/tmp/alt-kde-helper-actions/$UPDATE_SCRIPT"
 
 # Абсолютный путь к папке со скриптами
-SOURCE_SCRIPT_DIR="/opt/alt-kde-helper/usr/share/alt-kde-helper/scripts"
+SOURCE_SCRIPT_DIR="$AKH_SCRIPTS_DIR"
 
 # Удаляем старый флаг
 rm -f "$FLAG_FILE"

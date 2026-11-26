@@ -1,7 +1,8 @@
 #!/bin/bash
 # Скрипт запуска программы с проверкой прав администратора и sudo
 
-PROG_DIR="/opt/alt-kde-helper/usr/share/alt-kde-helper"
+LAUNCHER_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+PROG_DIR="$LAUNCHER_DIR/usr/share/alt-kde-helper"
 CHECK_SUDO_SCRIPT="$PROG_DIR/scripts/check_sudo.sh"
 
 # Функция проверки принадлежности пользователя к группе wheel

@@ -25,7 +25,7 @@ import flatsync
 from appimageinstall import AppImageInstallPage
 
 # Путь к вшитому пресету панели
-PRESET_FILE_PATH = '/opt/alt-kde-helper/usr/share/alt-kde-helper/plasma-org.kde.plasma.desktop-appletsrc'
+PRESET_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'plasma-org.kde.plasma.desktop-appletsrc')
 # Имя файла настроек панели KDE
 PANEL_CONFIG_FILENAME = 'plasma-org.kde.plasma.desktop-appletsrc'
 
@@ -41,7 +41,8 @@ def get_config_dir():
 HOME_FLATINSTALL    = os.path.join(get_config_dir(), 'flatinstall.sh')
 MARKER_PATH         = os.path.join(get_config_dir(), '.flatsync_version')
 SCRIPTS_FLATINSTALL = os.path.join(get_scripts_dir(), 'flatinstall.sh')
-
+# Каталог скриптов для дочерних процессов: скрипты запускаются из /tmp, а не из установочного каталога
+os.environ['AKH_SCRIPTS_DIR'] = get_scripts_dir()
 HOME_APPIMAGES      = os.path.join(get_config_dir(), 'appimages')
 MARKER_APPIMAGES    = os.path.join(get_config_dir(), '.appimages_version')
 SCRIPTS_APPIMAGES   = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'appimages')
@@ -55,7 +56,7 @@ def get_packages_file_path():
 
 def get_default_packages_path():
     """Возвращает путь к системному файлу со списком пакетов по умолчанию"""
-    return '/opt/alt-kde-helper/usr/share/alt-kde-helper/default_packages.txt'
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default_packages.txt')
 
 def ensure_packages_file(parent=None):
     config_dir = get_config_dir()
@@ -1510,7 +1511,7 @@ class MainWindow(QMainWindow):
         layout.addSpacing(10)
 
         # Путь к картинке с QR-кодом
-        qr_path = '/opt/alt-kde-helper/usr/share/alt-kde-helper/donate_qr.png'
+        qr_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'donate_qr.png')
 
         if os.path.exists(qr_path):
             pixmap = QPixmap(qr_path)

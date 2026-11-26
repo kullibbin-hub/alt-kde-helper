@@ -2,6 +2,7 @@
 # main.py - Alt KDE Helper (точка входа)
 
 import sys
+import os
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QIcon
 
@@ -15,7 +16,7 @@ def main():
     app.setStyleSheet(STYLESHEET)
 
     # Устанавливаем иконку приложения
-    app.setWindowIcon(QIcon("/opt/alt-kde-helper/usr/share/alt-kde-helper/alt-kde-helper.svg"))
+    app.setWindowIcon(QIcon(os.path.join(os.path.dirname(os.path.abspath(__file__)), "alt-kde-helper.svg")))
 
     # Устанавливаем desktop файл для идентификации в KDE/Wayland
     app.setDesktopFileName('alt-kde-helper')

@@ -13,7 +13,7 @@ if ! command -v epm &> /dev/null; then
     if [ $? -ne 0 ]; then
         echo -e "\033[1;31m❌ Ошибка: не удалось установить eepm\033[0m"
         echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало\033[0m"
-        bash /opt/alt-kde-helper/usr/share/alt-kde-helper/scripts/04_repo_p11_action.sh
+        bash "$AKH_SCRIPTS_DIR/04_repo_p11_action.sh"
         rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
         exit 0
     fi
@@ -21,13 +21,20 @@ else
     echo -e "\033[1;32m✓ eepm уже установлен\033[0m"
 fi
 
+CURRENT_MIRROR=$(grep -hE '^[[:space:]]*(rpm|deb)' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null | grep -oE 'https?://[^ ]+' | sort -u)
+
+echo -e "\033[1;33m→ Текущее зеркало:\033[0m"
+echo -e "\033[1;37m${CURRENT_MIRROR:-не определено}\033[0m"
+echo ""
+
 echo -e "\033[1;33m→ Поиск и подключение самого быстрого зеркала...\033[0m"
-sudo epm repo mirrors auto
+echo -e "\033[1;36mПо окончании тестирования выберите мышью нужное зеркало — двойной клик по строке, или выберите и нажмите Enter.\033[0m"
+sudo epm repo mirrors speedtest
 
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: не удалось настроить быстрое зеркало\033[0m"
     echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало\033[0m"
-    bash /opt/alt-kde-helper/usr/share/alt-kde-helper/scripts/04_repo_p11_action.sh
+    bash "$AKH_SCRIPTS_DIR/04_repo_p11_action.sh"
     rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
     exit 0
 fi
@@ -48,11 +55,14 @@ sudo apt-get update
 if [ $? -ne 0 ]; then
     echo -e "\033[1;31m❌ Ошибка: зеркало не работает или проблемы с соединением\033[0m"
     echo -e "\033[1;33m→ Быстрое зеркало не прошло проверку, возвращаем стандартное зеркало\033[0m"
-    bash /opt/alt-kde-helper/usr/share/alt-kde-helper/scripts/04_repo_p11_action.sh
+    bash "$AKH_SCRIPTS_DIR/04_repo_p11_action.sh"
     rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
     exit 0
 fi
 
 rm -f "/tmp/alt-kde-helper-actions/$(basename "$0")"
 
-echo -e "\033[1;32m✅ Самое быстрое зеркало успешно подключено и проверено\033[0m"
+NEW_MIRROR=$(grep -hE '^[[:space:]]*(rpm|deb)' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null | grep -oE 'https?://[^ ]+' | sort -u)
+
+echo -e "\033[1;32m✅ Подключено и проверено зеркало:\033[0m"
+echo -e "\033[1;37m${NEW_MIRROR:-не определено}\033[0m"
